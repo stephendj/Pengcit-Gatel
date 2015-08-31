@@ -1,12 +1,8 @@
 package colorcount;
 
 import java.awt.Color;
-import java.awt.FlowLayout;
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
