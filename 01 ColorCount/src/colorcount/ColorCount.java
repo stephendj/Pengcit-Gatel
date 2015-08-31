@@ -35,7 +35,14 @@ public class ColorCount {
   public static String getColorDetailInFile(String filename) throws IOException {
       StringBuilder detailColor = new StringBuilder("");
       Map<Color,Integer> color = getColorDetailInImage(ImageIO.read(new File(filename)));
-      int R,G,B;
+	  
+	  colorDetailToString(color);
+      
+      return detailColor.toString();
+  }
+  
+  public static String colorDetailToString(Map<Color,Integer> color) {
+      StringBuilder detailColor = new StringBuilder("");
       
       for (Map.Entry<Color, Integer> entry : color.entrySet())
       {

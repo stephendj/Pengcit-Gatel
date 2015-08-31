@@ -1,8 +1,10 @@
 package colorcount;
 
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -182,6 +184,13 @@ public class Main extends javax.swing.JFrame {
             this.imagePanel.add(image);
             this.imagePanel.revalidate();
             this.imagePanel.repaint();
+			
+			this.showDetailToggleButton.setSelected(false);
+			this.showDetailToggleButton.setVisible(false);
+			this.countLabel.setText("");
+			this.detailTextArea.setText("");
+			this.detailTextArea.setVisible(false);
+            this.detailPane.setBorder(null);
         }
     }//GEN-LAST:event_BrowseActionPerformed
 
@@ -190,7 +199,9 @@ public class Main extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "Please choose an image first!", "Missing Image",2);
         } else {
             try {
-                countLabel.setText("Number of colors : " + ColorCount.getColorCollectionInFile(imagePath).size());
+				colorDetail = ColorCount.getColorDetailInImage(ImageIO.read(new File(imagePath)));
+				countLabel.setText("Number of colors : " + colorDetail.size());
+//                countLabel.setText("Number of colors : " + ColorCount.getColorCollectionInFile(imagePath).size());
                 showDetailToggleButton.setVisible(true);
             } catch(Exception ex) {
                 ex.printStackTrace();
@@ -208,8 +219,8 @@ public class Main extends javax.swing.JFrame {
                 detailPane.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
                 detailTextArea.setVisible(true);
                 try {
-                    detailTextArea.setText(ColorCount.getColorDetailInFile(imagePath));
-                } catch (IOException ex) {
+                    detailTextArea.setText(ColorCount.colorDetailToString(colorDetail));
+                } catch (Exception ex) {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(null, "Problem occured, please try again");
                 }
@@ -232,6 +243,7 @@ public class Main extends javax.swing.JFrame {
 
     private JFileChooser chooser;
     private String imagePath;
+	private Map<Color,Integer> colorDetail;
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton browseButton;
