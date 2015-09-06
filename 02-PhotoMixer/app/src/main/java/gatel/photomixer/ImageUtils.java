@@ -60,4 +60,21 @@ public class ImageUtils {
 
         return ((red + green + blue) / 3);
     }
+
+    public static int[] getPixels(Bitmap image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int[] pixels = new int[width * height];
+        image.getPixels(pixels, 0, width, 0, 0, width, height);
+        return pixels;
+    }
+
+    public static byte[] convertToGrayscale(int[] pixels) {
+        int length = pixels.length;
+        byte[] grayscalePixels = new byte[length];
+        for (int i = 0; i < length; ++i) {
+            grayscalePixels[i] = (byte)getGrayscaleColor(pixels[i]);
+        }
+        return grayscalePixels;
+    }
 }

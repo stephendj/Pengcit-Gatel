@@ -122,7 +122,7 @@ public class MainActivity extends Activity {
             ContentResolver cr = getContentResolver();
 
             try {
-                // recyle unused bitmaps
+                // recycle unused bitmaps
                 if (bitmap != null) {
                     bitmap.recycle();
                 }
