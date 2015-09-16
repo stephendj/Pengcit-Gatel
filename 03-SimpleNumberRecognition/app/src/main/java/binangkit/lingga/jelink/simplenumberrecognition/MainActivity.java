@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -12,14 +13,14 @@ import android.widget.TextView;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends Activity {
 
     private static final int REQUEST_CODE_BROWSE = 1;
     private static final int REQUEST_CODE_CAPTURE = 2;
-    private NumberRecognitionUtil recognitor;
+    private NumberRecognitionUtils recognitor;
     private ImageView inputImage;
     private TextView numRec;
     private Bitmap bitmap;
@@ -56,19 +57,23 @@ public class MainActivity extends Activity {
                 bitmap = BitmapFactory.decodeStream(stream);
 
                 inputImage.setImageBitmap(bitmap);
-                ArrayList<Integer> numbers = recognitor.recognizeNumbers(bitmap);
 
-                // assume String
-                String numbersString = "";
-                Iterator<Integer> it = numbers.iterator();
-                if (it.hasNext()) {
-                    numbersString += it.next().toString();
-                }
-                while (it.hasNext()) {
-                    numbersString += ", " + it.next().toString();
-                }
-
-                numRec.setText(numbersString);
+                List<Integer> recognizedValues = NumberRecognitionUtils.recognizeBitmap(bitmap);
+                numRec.setText(Objects.toString(recognizedValues));
+//
+//                ArrayList<Integer> numbers = recognitor.recognizeNumbers(bitmap);
+//
+//                // assume String
+//                String numbersString = "";
+//                Iterator<Integer> it = numbers.iterator();
+//                if (it.hasNext()) {
+//                    numbersString += it.next().toString();
+//                }
+//                while (it.hasNext()) {
+//                    numbersString += ", " + it.next().toString();
+//                }
+//
+//                numRec.setText(numbersString);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {
