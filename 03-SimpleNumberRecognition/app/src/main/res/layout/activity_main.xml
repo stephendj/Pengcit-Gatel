@@ -29,7 +29,26 @@
             android:layout_height="wrap_content"
             android:text="New Text"
             android:id="@+id/numRec"
-            android:layout_weight="5" />
+            android:layout_weight="2.05" />
+
+        <EditText
+            android:layout_width="33dp"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/whiteThreshold"
+            android:text="127"
+            android:layout_weight="0.44" />
+
+        <EditText
+            android:layout_width="33dp"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/errorThreshold"
+            android:text="25"
+            android:layout_weight="0.50" />
+
     </LinearLayout>
 
 </LinearLayout>

@@ -1,11 +1,9 @@
 package binangkit.lingga.jelink.simplenumberrecognition;
 
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,7 +11,7 @@ import java.util.Stack;
 
 public class PatternRecognizer {
 
-    private static final double ERROR_THRESHOLD = 0.25;
+    public static double ERROR_THRESHOLD = 0.75;
 
     private final List<List<Integer>> chainCodes;
 
@@ -26,22 +24,24 @@ public class PatternRecognizer {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         int size = width * height;
+        Log.d("PatternRecognizer#fromBitmap", String.format("Image size is %d x %d", width, height));
         int[] pixels = new int[size];
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
         ChainCodeGenerator chainCodeGenerator = new ChainCodeGenerator(pixels, width, height);
         List<List<Integer>> chainCodes = new ArrayList<>();
 
-        for (int i = 0; i < size; ++i) {
-            if (PatternRecognizerUtils.isBlack(pixels[i])) {
-                int x = i % width;
-                int y = i / width;
-                try {
-                    List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
-                    chainCodes.add(chainCode);
-                } catch (Exception e) {
-                    Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
-                } finally {
-                    floodFill(pixels, width, height, x, y);
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                int offset = x + y * width;
+                if (PatternRecognizerUtils.isBlack(pixels[offset])) {
+                    try {
+                        List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
+                        chainCodes.add(chainCode);
+                    } catch (Exception e) {
+                        Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
+                    } finally {
+                        floodFill(pixels, width, height, x, y);
+                    }
                 }
             }
         }
@@ -49,22 +49,31 @@ public class PatternRecognizer {
         return new PatternRecognizer(chainCodes);
     }
 
-    private static void floodFill(int[] pixels, int width, int height, int x, int y) {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
-            return;
+    private static void floodFill(int[] pixels, int width, int height, int startX, int startY) {
+        Log.d("PatternRecognizer#floodFill", String.format("Starting Flood Fill from (%d, %d)", startX, startY));
+        if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
+            throw new IllegalStateException("Flood fill starting from out of bounds position");
         }
-        int offset = y * width + x;
-        if (!PatternRecognizerUtils.isBlack(pixels[offset])) {
-            return;
-        }
+        Stack<Integer> stack = new Stack<>();
+        int offset = startY * width + startX;
+        stack.push(offset);
         pixels[offset] = PatternRecognizerUtils.WHITE;
-        for (int direction = 0; direction < 8; ++direction) {
-            floodFill(
-                    pixels,
-                    width,
-                    height,
-                    x + ChainCodeGenerator.REPLACEMENT[direction][0],
-                    y + ChainCodeGenerator.REPLACEMENT[direction][1]);
+        while (!stack.empty()) {
+            int top = stack.pop();
+            int x = top % width;
+            int y = top / width;
+            for (int ix = x - 1; ix <= x + 1; ++ix) {
+                for (int iy = y - 1; iy <= y + 1; ++iy) {
+                    if (ix < 0 || ix >= width || iy < 0 || iy >= height) {
+                        continue;
+                    }
+                    int newOffset = iy * width + ix;
+                    if (PatternRecognizerUtils.isBlack(pixels[newOffset])) {
+                        stack.push(newOffset);
+                        pixels[newOffset] = PatternRecognizerUtils.WHITE;
+                    }
+                }
+            }
         }
     }
 
@@ -97,8 +106,8 @@ public class PatternRecognizer {
             }
         }
 
-        Log.d("HUBA", Objects.toString(chainCode));
-        Log.d("HUBA", String.format("minError = %d", minError));
+        Log.d("PatternRecognizer#recognizeChainCode", Objects.toString(chainCode));
+        Log.d("PatternRecognizer#recognizeChainCode", String.format("minError = %d (%d %%)", minError, (minError * 100 / chainCodeLength)));
 
         if (minError <= (int)(ERROR_THRESHOLD * chainCodeLength) + diffLength) {
             return best;

@@ -5,8 +5,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -31,6 +34,55 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         inputImage = (ImageView) findViewById(R.id.imageView);
         numRec = (TextView) findViewById(R.id.numRec);
+        final EditText blackThreshold = (EditText) findViewById(R.id.whiteThreshold);
+        final EditText errorThreshold = (EditText) findViewById(R.id.errorThreshold);
+
+        blackThreshold.setText(Integer.toString(PatternRecognizerUtils.BLACK_THRESHOLD));
+        errorThreshold.setText(Integer.toString((int)(PatternRecognizer.ERROR_THRESHOLD * 100)));
+
+        blackThreshold.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                try {
+                    int blackThresholdValue = Integer.valueOf(blackThreshold.getText().toString());
+                    PatternRecognizerUtils.BLACK_THRESHOLD = blackThresholdValue;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        errorThreshold.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                try {
+                    int errorThresholdValue = Integer.valueOf(blackThreshold.getText().toString());
+                    PatternRecognizer.ERROR_THRESHOLD = (double)errorThresholdValue / 100.;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public void pickImage(View View) {

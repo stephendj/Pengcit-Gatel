@@ -8,15 +8,15 @@ import java.util.Objects;
 
 public class PatternRecognizerUtils {
 
-    private static final int BLACK_THRESHOLD = 0x0F;
-    public static final int WHITE = 0xFFFFFFFF;
+    public static int BLACK_THRESHOLD = 0x50;
+    public static final int WHITE = 0x00FFFFFF;
 
     private PatternRecognizerUtils() {
         // Utility class
     }
 
     public static boolean isBlack(int pixel) {
-        int grayscalePixel = (((pixel << 16) & 0xFF) + ((pixel << 8) & 0xFF) + (pixel & 0xFF)) / 3;
+        int grayscalePixel = (((pixel >> 16) & 0xFF) + ((pixel >> 8) & 0xFF) + (pixel & 0xFF)) / 3;
         return grayscalePixel <= BLACK_THRESHOLD;
     }
 
