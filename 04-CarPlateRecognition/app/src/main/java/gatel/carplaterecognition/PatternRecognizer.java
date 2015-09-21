@@ -33,7 +33,7 @@ public class PatternRecognizer {
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 int offset = x + y * width;
-                if (PatternRecognizerUtils.isBlack(pixels[offset])) {
+                if (PatternRecognizerUtils.isWhite(pixels[offset])) {
                     try {
                         List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
                         chainCodes.add(chainCode);
@@ -57,7 +57,7 @@ public class PatternRecognizer {
         Stack<Integer> stack = new Stack<>();
         int offset = startY * width + startX;
         stack.push(offset);
-        pixels[offset] = PatternRecognizerUtils.WHITE;
+        pixels[offset] = PatternRecognizerUtils.BLACK;
         while (!stack.empty()) {
             int top = stack.pop();
             int x = top % width;
@@ -68,9 +68,9 @@ public class PatternRecognizer {
                         continue;
                     }
                     int newOffset = iy * width + ix;
-                    if (PatternRecognizerUtils.isBlack(pixels[newOffset])) {
+                    if (PatternRecognizerUtils.isWhite(pixels[newOffset])) {
                         stack.push(newOffset);
-                        pixels[newOffset] = PatternRecognizerUtils.WHITE;
+                        pixels[newOffset] = PatternRecognizerUtils.BLACK;
                     }
                 }
             }

@@ -9,6 +9,7 @@ public class PatternRecognizerUtils {
 
     public static int BLACK_THRESHOLD = 0x30;
     public static final int WHITE = 0x00FFFFFF;
+    public static final int BLACK = 0;
 
     private PatternRecognizerUtils() {
         // Utility class

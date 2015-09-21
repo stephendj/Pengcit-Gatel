@@ -18,9 +18,8 @@ public class ImageUtils {
             for (int y = 0; y < image.getHeight(); ++y) {
                 int color = image.getPixel(x, y);
                 int average = ((getRed(color) + getGreen(color) + getBlue(color))/3) * GRAYSCALE_MASK;
+                binaryBitmap.setPixel(x, y, 0);
                 if(PatternRecognizerUtils.isWhite(average)) {
-                    binaryBitmap.setPixel(x, y, 0);
-                } else {
                     binaryBitmap.setPixel(x, y, 0x00FFFFFF);
                 }
             }
