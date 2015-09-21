@@ -16,6 +16,7 @@ import android.widget.TextView;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -111,21 +112,18 @@ public class MainActivity extends Activity {
                 inputImage.setImageBitmap(bitmap);
 
                 List<Integer> recognizedValues = NumberRecognitionUtils.recognizeBitmap(bitmap);
-                numRec.setText(Objects.toString(recognizedValues));
-//
-//                ArrayList<Integer> numbers = recognitor.recognizeNumbers(bitmap);
-//
-//                // assume String
-//                String numbersString = "";
-//                Iterator<Integer> it = numbers.iterator();
-//                if (it.hasNext()) {
-//                    numbersString += it.next().toString();
-//                }
-//                while (it.hasNext()) {
-//                    numbersString += ", " + it.next().toString();
-//                }
-//
-//                numRec.setText(numbersString);
+                List<String> realValues = new ArrayList<>();
+                for(int i = 0; i < recognizedValues.size(); ++i) {
+                    switch (recognizedValues.get(i)) {
+                        case 10 : realValues.add("square"); break;
+                        case 11 : realValues.add("triangle"); break;
+                        case 12 : realValues.add("right triangle"); break;
+                        case 13 : realValues.add("rectangle"); break;
+                        case 14 : realValues.add("circle"); break;
+                        default : realValues.add(recognizedValues.get(i).toString());
+                    }
+                }
+                numRec.setText(Objects.toString(realValues));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {
