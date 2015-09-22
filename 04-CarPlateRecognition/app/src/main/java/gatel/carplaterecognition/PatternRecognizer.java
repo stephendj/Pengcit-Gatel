@@ -36,17 +36,41 @@ public class PatternRecognizer {
                 if (PatternRecognizerUtils.isWhite(pixels[offset])) {
                     try {
                         List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
+                        floodFill(pixels, width, height, x, y);
                         chainCodes.add(chainCode);
+                        chainCodes.addAll(horizontalRead(bitmap, chainCodeGenerator, pixels, y));
                     } catch (Exception e) {
                         Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
-                    } finally {
                         floodFill(pixels, width, height, x, y);
+                    } finally {
                     }
                 }
             }
         }
 
         return new PatternRecognizer(chainCodes);
+    }
+
+    public static List<List<Integer>> horizontalRead(Bitmap bitmap, ChainCodeGenerator chainCodeGenerator, int[] pixels, int y) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        List<List<Integer>> chainCodes = new ArrayList<>();
+        for (int x = 0; x < width; ++x) {
+            int offset = x + y * width;
+            if (PatternRecognizerUtils.isWhite(pixels[offset])) {
+                System.out.println("horizontal white");
+                try {
+                    List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
+                    chainCodes.add(chainCode);
+                } catch (Exception e) {
+                    Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
+                } finally {
+                    floodFill(pixels, width, height, x, y);
+                }
+            }
+        }
+        System.out.println("horizontal, y : " + y + ", size : " + chainCodes.size());
+        return chainCodes;
     }
 
     private static void floodFill(int[] pixels, int width, int height, int startX, int startY) {
