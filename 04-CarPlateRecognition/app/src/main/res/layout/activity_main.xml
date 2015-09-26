@@ -5,32 +5,15 @@
     android:layout_height="match_parent">
 
     <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="fill_parent"
+        android:layout_height="390dp"
         android:id="@+id/imageView"
-        android:layout_weight="16"
         android:layout_margin="10dp" />
 
     <LinearLayout
         android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="2.27">
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Browse"
-            android:id="@+id/button"
-            android:onClick="pickImage"
-            android:layout_weight="1" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="New Text"
-            android:id="@+id/numRec"
-            android:layout_weight="2.05" />
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
 
         <TextView
             android:layout_width="wrap_content"
@@ -48,6 +31,44 @@
             android:id="@+id/errorThreshold"
             android:text="25"
             android:layout_weight="0.50" />
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Black on White"
+            android:id="@+id/blackOnWhite"
+            android:layout_weight="0.30"
+            android:checked="true" />
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Resize"
+            android:id="@+id/resize"
+            android:layout_weight="0.35"
+            android:checked="true" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2.27">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Browse"
+            android:id="@+id/button"
+            android:onClick="pickImage"
+            android:layout_weight="0.39" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Text"
+            android:id="@+id/numRec"
+            android:layout_weight="2.05" />
 
     </LinearLayout>
 

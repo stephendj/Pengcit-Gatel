@@ -1,7 +1,12 @@
 package gatel.carplaterecognition;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.util.Log;
+import android.util.Pair;
+
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Multimap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,13 +18,13 @@ public class PatternRecognizer {
 
     public static double ERROR_THRESHOLD = 0.75;
 
-    private final List<List<Integer>> chainCodes;
+    private final List<List<List<Integer>>> chainCodesPerLine;
 
-    public PatternRecognizer(List<List<Integer>> chainCodes) {
-        this.chainCodes = chainCodes;
+    public PatternRecognizer(List<List<List<Integer>>> chainCodesPerLine) {
+        this.chainCodesPerLine = chainCodesPerLine;
     }
 
-    public static PatternRecognizer fromBitmap(Bitmap bitmap) {
+    public static PatternRecognizer fromBitmap(Bitmap bitmap, ColorScheme scheme) {
         // TODO: convert to B/W
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -27,87 +32,139 @@ public class PatternRecognizer {
         Log.d("PatternRecognizer#fromBitmap", String.format("Image size is %d x %d", width, height));
         int[] pixels = new int[size];
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-        ChainCodeGenerator chainCodeGenerator = new ChainCodeGenerator(pixels, width, height);
-        List<List<Integer>> chainCodes = new ArrayList<>();
+        ChainCodeGenerator chainCodeGenerator = new ChainCodeGenerator(pixels, width, height, scheme);
+
+        List<Pair<Integer, Integer>> lines = new ArrayList<>();
+        List<List<List<Integer>>> chainCodesPerLine = new ArrayList<>();
 
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 int offset = x + y * width;
-                if (PatternRecognizerUtils.isWhite(pixels[offset])) {
+                if (scheme.isForeground(pixels[offset])) {
+                    List<Integer> chainCode;
                     try {
-                        List<Integer> chainCode = chainCodeGenerator.generateChainCode(x, y);
-                        chainCodes.add(chainCode);
+                        chainCode = chainCodeGenerator.generateChainCode(x, y);
+                        Log.d("fromBitmap", Objects.toString(chainCode));
+                        Pair<Point, Point> bounds = floodFill(pixels, width, height, x, y, scheme);
+                        int bestLine = -1;
+                        int maxCollision = 0;
+                        for (int i = 0; i < lines.size(); ++i) {
+                            Pair<Integer, Integer> line = lines.get(i);
+                            int collision = Math.min(bounds.second.y, line.second) -
+                                    Math.max(bounds.first.y, line.first);
+                            if (collision > maxCollision) {
+                                bestLine = i;
+                                maxCollision = collision;
+                            }
+                        }
+                        Pair<Integer, Integer> lastLine = new Pair<>(bounds.first.y, bounds.second.y);
+                        if (bestLine < 0) {
+                            List<List<Integer>> chainCodeInNewLine = new ArrayList<>();
+                            chainCodeInNewLine.add(chainCode);
+                            chainCodesPerLine.add(chainCodeInNewLine);
+                            lines.add(lastLine);
+                        } else {
+                            chainCodesPerLine.get(bestLine).add(chainCode);
+                            lines.set(bestLine, lastLine);
+                        }
                     } catch (Exception e) {
                         Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
-                    } finally {
-                        floodFill(pixels, width, height, x, y);
                     }
                 }
             }
         }
 
-        return new PatternRecognizer(chainCodes);
+
+        return new PatternRecognizer(chainCodesPerLine);
     }
 
-    private static void floodFill(int[] pixels, int width, int height, int startX, int startY) {
+    /**
+     * @return the bounding box of the component.
+     */
+    private static Pair<Point, Point> floodFill(int[] pixels, int width, int height, int startX, int startY, ColorScheme scheme) {
         Log.d("PatternRecognizer#floodFill", String.format("Starting Flood Fill from (%d, %d)", startX, startY));
         if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
             throw new IllegalStateException("Flood fill starting from out of bounds position");
         }
+        int minX = startX, maxX = startX, minY = startY, maxY = startY;
         Stack<Integer> stack = new Stack<>();
         int offset = startY * width + startX;
         stack.push(offset);
-        pixels[offset] = PatternRecognizerUtils.BLACK;
+        pixels[offset] = scheme.getBackground();
         while (!stack.empty()) {
             int top = stack.pop();
             int x = top % width;
             int y = top / width;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
             for (int ix = x - 1; ix <= x + 1; ++ix) {
                 for (int iy = y - 1; iy <= y + 1; ++iy) {
                     if (ix < 0 || ix >= width || iy < 0 || iy >= height) {
                         continue;
                     }
                     int newOffset = iy * width + ix;
-                    if (PatternRecognizerUtils.isWhite(pixels[newOffset])) {
+                    if (scheme.isForeground(pixels[newOffset])) {
                         stack.push(newOffset);
-                        pixels[newOffset] = PatternRecognizerUtils.BLACK;
+                        pixels[newOffset] = scheme.getBackground();
                     }
                 }
             }
         }
+        return new Pair<>(new Point(minX, minY), new Point(maxX, maxY));
     }
 
-    public <T> List<T> recognizePattern(Map<T, List<Integer>> patterns) {
+    public <T> List<T> recognizePattern(Multimap<T, List<Integer>> patterns) {
+        List<List<T>> recognizedPatternsPerLine = recognizePatternPerLine(patterns);
         List<T> recognizedPatterns = new ArrayList<>();
-        for (List<Integer> chainCode : chainCodes) {
-            T bestPattern = recognizeChainCode(chainCode, patterns);
-            recognizedPatterns.add(bestPattern);
+        for (List<T> line : recognizedPatternsPerLine) {
+            recognizedPatterns.addAll(line);
         }
         return recognizedPatterns;
     }
 
-    private <T> T recognizeChainCode(List<Integer> chainCode, Map<T, List<Integer>> patterns) {
+    public <T> List<List<T>> recognizePatternPerLine(Multimap<T, List<Integer>> patterns) {
+        List<List<T>> recognizedPatterns = new ArrayList<>();
+        for (List<List<Integer>> chainCodesLine : chainCodesPerLine) {
+            List<T> recognizedPatternsThisLine = new ArrayList<>();
+            for (List<Integer> chainCode : chainCodesLine) {
+                T bestPattern = recognizeChainCode(chainCode, patterns);
+                recognizedPatternsThisLine.add(bestPattern);
+            }
+            recognizedPatterns.add(recognizedPatternsThisLine);
+        }
+        return recognizedPatterns;
+    }
+
+    public <T> T recognizeChainCode(List<Integer> chainCode, Multimap<T, List<Integer>> patterns) {
         T best = null;
         int minError = chainCode.size();
         int diffLength = 0;
         int chainCodeLength = chainCode.size();
 
-        for (Map.Entry<T, List<Integer>> entry : patterns.entrySet()) {
+        for (Map.Entry<T, List<Integer>> entry : patterns.entries()) {
             List<Integer> normalizedPattern = normalizePattern(
                     entry.getValue(),
                     chainCodeLength);
-            int editDistance = PatternRecognizerUtils.calculateEditDistance(
+            List<Integer> normalizedChainCode = normalizePattern(
                     chainCode,
-                    normalizedPattern);
+                    normalizedPattern.size());
+            int scalingFactor = normalizedChainCode.size() / chainCodeLength;
+            int editDistance = PatternRecognizerUtils.calculateCircularEditDistance(
+                    normalizedChainCode,
+                    normalizedPattern) / scalingFactor;
             if (editDistance < minError) {
                 best = entry.getKey();
                 minError = editDistance;
-                diffLength = Math.abs(normalizedPattern.size() - chainCodeLength);
+                diffLength = Math.abs(normalizedPattern.size() - normalizedChainCode.size());
             }
         }
 
         Log.d("PatternRecognizer#recognizeChainCode", Objects.toString(chainCode));
-        Log.d("PatternRecognizer#recognizeChainCode", String.format("minError = %d (%d %%)", minError, (minError * 100 / chainCodeLength)));
+        Log.d("PatternRecognizer#recognizeChainCode",
+                String.format("%s detected with minError = %d (%d %%)",
+                        Objects.toString(best), minError, (minError * 100 / chainCodeLength)));
 
         if (minError <= (int)(ERROR_THRESHOLD * chainCodeLength) + diffLength) {
             return best;
@@ -139,7 +196,15 @@ public class PatternRecognizer {
     }
 
     public List<List<Integer>> getChainCodes() {
+        List<List<Integer>> chainCodes = new ArrayList<>();
+        for (List<List<Integer>> line : chainCodesPerLine) {
+            chainCodes.addAll(line);
+        }
         return chainCodes;
+    }
+
+    public List<List<List<Integer>>> getChainCodesPerLine() {
+        return chainCodesPerLine;
     }
 
 }

@@ -26,4 +26,5 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.google.guava:guava:19.0-rc2'
 }

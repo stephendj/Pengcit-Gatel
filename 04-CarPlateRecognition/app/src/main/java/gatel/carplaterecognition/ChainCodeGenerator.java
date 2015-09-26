@@ -1,6 +1,7 @@
 package gatel.carplaterecognition;
 
 import android.graphics.Point;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,14 +13,16 @@ public class ChainCodeGenerator {
     private final int[] pixels;
     private final int width;
     private final int height;
+    private final ColorScheme scheme;
 
-    public ChainCodeGenerator(int[] pixels, int width, int height) {
+    public ChainCodeGenerator(int[] pixels, int width, int height, ColorScheme scheme) {
         if (pixels.length != width * height) {
             throw new IllegalArgumentException("Pixels length must be equal to width * height");
         }
         this.pixels = pixels;
         this.width = width;
         this.height = height;
+        this.scheme = scheme;
     }
 
     public List<Integer> generateChainCode(int x, int y) throws Exception {
@@ -52,7 +55,7 @@ public class ChainCodeGenerator {
             Point neighbor = new Point(
                     currentPosition.x + REPLACEMENT[nextDirection][0],
                     currentPosition.y + REPLACEMENT[nextDirection][1]);
-            if (isPointWithinBoundaryAndWhite(neighbor.x, neighbor.y)) {
+            if (isPointWithinBoundaryAndForeground(neighbor.x, neighbor.y)) {
                 return new ChainCodeState(neighbor, nextDirection);
             }
         }
@@ -60,12 +63,8 @@ public class ChainCodeGenerator {
         throw new IllegalStateException("Unable to find next chain code");
     }
 
-    public boolean isPointWithinBoundaryAndWhite(int x, int y) {
-        return isPointWithinBoundary(x, y) && PatternRecognizerUtils.isWhite(pixels[y * width + x]);
-    }
-
-    public boolean isPointWithinBoundaryAndBlack(int x, int y) {
-        return isPointWithinBoundary(x, y) && PatternRecognizerUtils.isBlack(pixels[y * width + x]);
+    public boolean isPointWithinBoundaryAndForeground(int x, int y) {
+        return isPointWithinBoundary(x, y) && scheme.isForeground(pixels[y * width + x]);
     }
 
     private boolean isPointWithinBoundary(int x, int y) {

@@ -1,13 +1,15 @@
 package gatel.carplaterecognition;
 
 import android.graphics.Bitmap;
+import android.util.Log;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class NumberRecognitionUtils {
+public class CharacterRecognitionUtils {
     private static final int[][] CHAIN_CODES = {
         // 0
         {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 0, 7, 0, 0, 0, 0, 1, 0, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 3, 3, 3, 4, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 6, 5},
@@ -82,19 +84,43 @@ public class NumberRecognitionUtils {
         // Z
         {}
     };
-    private static Map<Integer, List<Integer>> CHAIN_CODE_MAP = new HashMap<>();
-    static {
-        for (int i = 0; i < CHAIN_CODES.length; ++i) {
-            List<Integer> chainCode = new ArrayList<>();
-            for (int j = 0; j < CHAIN_CODES[i].length; ++j) {
-                chainCode.add(CHAIN_CODES[i][j]);
+    private static Multimap<Character, List<Integer>> CHAIN_CODE_MAP = ArrayListMultimap.create();
+//    static {
+//        for (int i = 0; i < CHAIN_CODES.length; ++i) {
+//            List<Integer> chainCode = new ArrayList<>();
+//            for (int j = 0; j < CHAIN_CODES[i].length; ++j) {
+//                chainCode.add(CHAIN_CODES[i][j]);
+//            }
+//            CHAIN_CODE_MAP.put((char)i, chainCode);
+//        }
+//    }
+
+    public static List<Character> recognizeBitmap(Bitmap bitmap, ColorScheme scheme) {
+        PatternRecognizer recognizer = PatternRecognizer.fromBitmap(bitmap, scheme);
+        return recognizer.recognizePattern(CHAIN_CODE_MAP);
+    }
+
+    public static void addTrainingSet(Bitmap bitmap, String expected) {
+        PatternRecognizer recognizer = PatternRecognizer.fromBitmap(bitmap, ColorScheme.DEFAULT_COLOR_SCHEME);
+        List<List<Integer>> chainCodes = recognizer.getChainCodes();
+//        Log.d("CharacterRecognitionUtils#addTrainingSet")
+        int expectedLength = expected.length();
+        int chainCodesSize = chainCodes.size();
+        if (chainCodesSize != expectedLength) {
+            Log.d("CharacterRecognitionUtils#addTrainingSet",
+                    String.format("Training failed: expecting %d values but %d chain codes was found",
+                            expectedLength, chainCodesSize));
+        } else {
+            for (int i = 0; i < expectedLength; ++i) {
+                CHAIN_CODE_MAP.put(expected.charAt(i), chainCodes.get(i));
             }
-            CHAIN_CODE_MAP.put(i, chainCode);
+            Log.d("CharacterRecognitionUtils#addTrainingSet",
+                    "Successfully added " + expected + " to chain code list");
         }
     }
 
-    public static List<Integer> recognizeBitmap(Bitmap bitmap) {
-        PatternRecognizer recognizer = PatternRecognizer.fromBitmap(bitmap);
-        return recognizer.recognizePattern(CHAIN_CODE_MAP);
+    public static List<List<Character>> recognizeBitmapPerLine(Bitmap bitmap, ColorScheme scheme) {
+        PatternRecognizer recognizer = PatternRecognizer.fromBitmap(bitmap, scheme);
+        return recognizer.recognizePatternPerLine(CHAIN_CODE_MAP);
     }
 }

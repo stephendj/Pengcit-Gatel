@@ -2,7 +2,10 @@ package gatel.carplaterecognition;
 
 import android.graphics.Bitmap;
 
+import java.util.Arrays;
+
 public class MedianFilter {
+
     public static Bitmap removeNoise(Bitmap image) {
         int imageWidth = image.getWidth();
         int imageHeight = image.getHeight();
@@ -22,7 +25,7 @@ public class MedianFilter {
                         ++i;
                     }
                 }
-                sortWindow(window);
+                Arrays.sort(window);
                 noiselessImage.setPixel(x, y, window[(int) Math.ceil((windowWidth * windowHeight)/2)]);
             }
         }
@@ -30,16 +33,4 @@ public class MedianFilter {
         return noiselessImage;
     }
 
-    private static void sortWindow(int[] window) {
-        int temp;
-        for(int i = 0; i < (window.length - 1); ++i) {
-            for(int j = 1; j < (window.length - i); ++j){
-                if(window[j-1] > window[j]){
-                    temp=window[j-1];
-                    window[j-1] = window[j];
-                    window[j] = temp;
-                }
-            }
-        }
-    }
 }

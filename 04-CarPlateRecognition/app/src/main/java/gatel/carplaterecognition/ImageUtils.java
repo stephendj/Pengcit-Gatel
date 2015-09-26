@@ -6,28 +6,27 @@ import android.util.Log;
 public class ImageUtils {
 
     private static final int MAX_COLOR = 256;
-    public static final int GRAYSCALE_MASK = 0x10101;
 
     private ImageUtils () {
-        // utility class
+        // Utility class
     }
 
-    public static Bitmap getBinaryImage(Bitmap image) {
+    public static Bitmap getBinaryImage(Bitmap image, ColorScheme scheme) {
         Bitmap binaryBitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.RGB_565);
         for (int x = 0; x < image.getWidth(); ++x) {
             for (int y = 0; y < image.getHeight(); ++y) {
                 int color = image.getPixel(x, y);
-                int average = ((getRed(color) + getGreen(color) + getBlue(color))/3) * GRAYSCALE_MASK;
-                binaryBitmap.setPixel(x, y, 0);
-                if(PatternRecognizerUtils.isWhite(average)) {
-                    binaryBitmap.setPixel(x, y, 0x00FFFFFF);
+                int average = ColorUtils.getGrayscale(color) * ColorUtils.GRAYSCALE_MASK;
+                binaryBitmap.setPixel(x, y, scheme.getBackground());
+                if(scheme.isForeground(average)) {
+                    binaryBitmap.setPixel(x, y, scheme.getForeground());
                 }
             }
         }
         return MedianFilter.removeNoise(binaryBitmap);
     }
 
-    public static void calculateThreshold(Bitmap image) {
+    public static ColorScheme calculateColorScheme(Bitmap image, ColorScheme.Type type) {
         int[] pixels = ImageUtils.getPixels(image);
         byte[] grayscalePixels = ImageUtils.convertToGrayscale(pixels);
         int[] frequency = calculateFrequency(grayscalePixels);
@@ -60,7 +59,7 @@ public class ImageUtils {
                 max = between;
             }
         }
-        PatternRecognizerUtils.BLACK_THRESHOLD = ((threshold1 + threshold2) / 2);
+        return new ColorScheme(type, (threshold1 + threshold2) / 2);
     }
 
     private static int[] calculateFrequency(byte[] grayscalePixels) {
@@ -68,31 +67,10 @@ public class ImageUtils {
         for (int i = 0 ; i < MAX_COLOR; ++i) {
             frequency[i] = 0;
         }
-        int length = grayscalePixels.length;
-        for (int i = 0; i < length; ++i) {
-            frequency[0xFF & grayscalePixels[i]]++;
+        for (byte grayscalePixel : grayscalePixels) {
+            frequency[0xFF & grayscalePixel]++;
         }
         return frequency;
-    }
-
-    public static int getBlue(int color) {
-        return 0x0000FF & color;
-    }
-
-    public static int getGreen(int color) {
-        return (0x00FF00 & color) >> 8;
-    }
-
-    public static int getRed(int color) {
-        return (0xFF0000 & color) >> 16;
-    }
-
-    public static int getGrayscaleColor(int color) {
-        int red = getRed(color);
-        int green = getGreen(color);
-        int blue = getBlue(color);
-
-        return ((red + green + blue) / 3);
     }
 
     public static int[] getPixels(Bitmap image) {
@@ -107,7 +85,7 @@ public class ImageUtils {
         int length = pixels.length;
         byte[] grayscalePixels = new byte[length];
         for (int i = 0; i < length; ++i) {
-            grayscalePixels[i] = (byte)getGrayscaleColor(pixels[i]);
+            grayscalePixels[i] = (byte)ColorUtils.getGrayscale(pixels[i]);
         }
         return grayscalePixels;
     }

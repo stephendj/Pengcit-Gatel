@@ -4,33 +4,26 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
 public class MainActivity extends Activity {
 
     private static final int REQUEST_CODE_BROWSE = 1;
     private static final int REQUEST_CODE_CAPTURE = 2;
-    private NumberRecognitionUtils recognitor;
+    private CharacterRecognitionUtils recognitor;
     private ImageView inputImage;
     private TextView numRec;
     private Bitmap bitmap;
@@ -44,7 +37,7 @@ public class MainActivity extends Activity {
         final TextView blackThreshold = (TextView) findViewById(R.id.whiteThreshold);
         final EditText errorThreshold = (EditText) findViewById(R.id.errorThreshold);
 
-        blackThreshold.setText(Integer.toString(PatternRecognizerUtils.BLACK_THRESHOLD));
+        blackThreshold.setText(Integer.toString(ColorScheme.DEFAULT_COLOR_SCHEME.getThreshold()));
         errorThreshold.setText(Integer.toString((int) (PatternRecognizer.ERROR_THRESHOLD * 100)));
 
         errorThreshold.addTextChangedListener(new TextWatcher() {
@@ -68,6 +61,16 @@ public class MainActivity extends Activity {
                 }
             }
         });
+
+//        CharacterRecognitionUtils.addTrainingSet(
+//                BitmapFactory.decodeResource(getResources(), R.drawable.sample_calibri),
+//                "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+//        CharacterRecognitionUtils.addTrainingSet(
+//                BitmapFactory.decodeResource(getResources(), R.drawable.sample_comicsans),
+//                "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+        CharacterRecognitionUtils.addTrainingSet(
+                BitmapFactory.decodeResource(getResources(), R.drawable.sample_fontplatnomor),
+                "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
 
     public void pickImage(View View) {
@@ -86,54 +89,41 @@ public class MainActivity extends Activity {
         InputStream stream = null;
         if (requestCode == REQUEST_CODE_BROWSE && resultCode == Activity.RESULT_OK) {
             try {
-                // recyle unused bitmaps
+                // recycle unused bitmaps
                 if (bitmap != null) {
                     bitmap.recycle();
                 }
                 stream = getContentResolver().openInputStream(data.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
-                ImageUtils.calculateThreshold(bitmap);
 
-                Bitmap binaryBitmap = ImageUtils.getBinaryImage(bitmap);
-                inputImage.setImageBitmap(bitmap);
-
-                final TextView blackThreshold = (TextView) findViewById(R.id.whiteThreshold);
-                blackThreshold.setText(Integer.toString(PatternRecognizerUtils.BLACK_THRESHOLD));
-
-                List<Integer> recognizedValues = NumberRecognitionUtils.recognizeBitmap(binaryBitmap);
-                List<String> realValues = new ArrayList<>();
-                for(int i = 0; i < recognizedValues.size(); ++i) {
-                    switch (recognizedValues.get(i)) {
-                        case 10 : realValues.add("A"); break;
-                        case 11 : realValues.add("B"); break;
-                        case 12 : realValues.add("C"); break;
-                        case 13 : realValues.add("D"); break;
-                        case 14 : realValues.add("E"); break;
-                        case 15 : realValues.add("F"); break;
-                        case 16 : realValues.add("G"); break;
-                        case 17 : realValues.add("H"); break;
-                        case 18 : realValues.add("I"); break;
-                        case 19 : realValues.add("J"); break;
-                        case 20 : realValues.add("K"); break;
-                        case 21 : realValues.add("L"); break;
-                        case 22 : realValues.add("M"); break;
-                        case 23 : realValues.add("N"); break;
-                        case 24 : realValues.add("O"); break;
-                        case 25 : realValues.add("P"); break;
-                        case 26 : realValues.add("Q"); break;
-                        case 27 : realValues.add("R"); break;
-                        case 28 : realValues.add("S"); break;
-                        case 29 : realValues.add("T"); break;
-                        case 30 : realValues.add("U"); break;
-                        case 31 : realValues.add("V"); break;
-                        case 32 : realValues.add("W"); break;
-                        case 33 : realValues.add("X"); break;
-                        case 34 : realValues.add("Y"); break;
-                        case 35 : realValues.add("Z"); break;
-                        default : realValues.add(recognizedValues.get(i).toString());
+                final CheckBox resize = (CheckBox) findViewById(R.id.resize);
+                if (resize.isChecked()) {
+                    double scale = 200. / (double)bitmap.getWidth();
+                    if (scale < 1) {
+                        bitmap = Bitmap.createScaledBitmap(bitmap, (int)(scale * bitmap.getWidth()), (int)(scale * bitmap.getHeight()), true);
                     }
                 }
-                numRec.setText(Objects.toString(realValues));
+
+                final CheckBox blackOnWhite = (CheckBox) findViewById(R.id.blackOnWhite);
+                ColorScheme.Type type = blackOnWhite.isChecked() ?
+                        ColorScheme.Type.BLACK_ON_WHITE :
+                        ColorScheme.Type.WHITE_ON_BLACK;
+
+                ColorScheme scheme = ImageUtils.calculateColorScheme(bitmap, type);
+                Bitmap binaryBitmap = ImageUtils.getBinaryImage(bitmap, scheme);
+                inputImage.setImageBitmap(binaryBitmap);
+
+                final TextView blackThreshold = (TextView) findViewById(R.id.whiteThreshold);
+                blackThreshold.setText(Integer.toString(scheme.getThreshold()));
+
+                List<List<Character>> recognizedValues =
+                        CharacterRecognitionUtils.recognizeBitmapPerLine(binaryBitmap, scheme);
+                StringBuilder builder = new StringBuilder();
+                for (List<Character> line : recognizedValues) {
+                    builder.append(Objects.toString(line));
+                    builder.append("\n");
+                }
+                numRec.setText(builder.toString());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {
