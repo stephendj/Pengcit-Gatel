@@ -1,7 +1,9 @@
 package gatel.carplaterecognition;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.util.Log;
+import android.util.Pair;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -84,7 +86,7 @@ public class CharacterRecognitionUtils {
         // Z
         {}
     };
-    private static Multimap<Character, List<Integer>> CHAIN_CODE_MAP = ArrayListMultimap.create();
+    public static Multimap<Character, List<Integer>> CHAIN_CODE_MAP = ArrayListMultimap.create();
 //    static {
 //        for (int i = 0; i < CHAIN_CODES.length; ++i) {
 //            List<Integer> chainCode = new ArrayList<>();
@@ -117,10 +119,51 @@ public class CharacterRecognitionUtils {
             Log.d("CharacterRecognitionUtils#addTrainingSet",
                     "Successfully added " + expected + " to chain code list");
         }
+
+        // Add chain code for rectangle
+        int[] rectangleCodeArray = {6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
+        List<Integer> rectangleCode = new ArrayList<>();
+        for(int i = 0; i < rectangleCodeArray.length; ++i) {
+            rectangleCode.add(rectangleCodeArray[i]);
+        }
+        CHAIN_CODE_MAP.put('`', rectangleCode);
+    }
+
+    public static List<Integer> deriveChainCode(List<Integer> chainCode) {
+        List<Integer> newChainCode = new ArrayList<>();
+
+        // Derive the chain code, dk = ((ck) - (ck-1)) mod 8
+        for(int i = 1; i < chainCode.size(); ++i) {
+            int code = (chainCode.get(i)-chainCode.get(i-1))%8;
+            int newCode = (code < 0) ? code + 8 : code;
+            newChainCode.add(newCode);
+        }
+
+        // Normalize the new chain code, find the first 0 and switch circularly
+        int i = 0;
+        while(i < newChainCode.size()) {
+            if(newChainCode.get(i) == 0) {
+                for(int j = 0; j < i; ++j) {
+                    newChainCode.add(newChainCode.get(j));
+                }
+                for(int j = 0; j < i; ++j) {
+                    int x = newChainCode.remove(0);
+                }
+                break;
+            } else {
+                ++i;
+            }
+        }
+
+        return newChainCode;
     }
 
     public static List<List<Character>> recognizeBitmapPerLine(Bitmap bitmap, ColorScheme scheme) {
         PatternRecognizer recognizer = PatternRecognizer.fromBitmap(bitmap, scheme);
         return recognizer.recognizePatternPerLine(CHAIN_CODE_MAP);
+    }
+
+    public static List<Pair<Point, Point>> recognizeSquareFromBitmap(Bitmap bitmap, ColorScheme scheme) {
+        return PatternRecognizer.squareFromBitmap(bitmap, scheme);
     }
 }

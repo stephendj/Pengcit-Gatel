@@ -24,6 +24,7 @@ public class ImageUtils {
             }
         }
         return MedianFilter.removeNoise(binaryBitmap);
+        //return binaryBitmap;
     }
 
     public static ColorScheme calculateColorScheme(Bitmap image, ColorScheme.Type type) {

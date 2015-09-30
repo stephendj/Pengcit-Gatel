@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Pair;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -16,6 +18,7 @@ import android.widget.TextView;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -97,8 +100,9 @@ public class MainActivity extends Activity {
                 bitmap = BitmapFactory.decodeStream(stream);
 
                 final CheckBox resize = (CheckBox) findViewById(R.id.resize);
+                double scale = 200. / (double)bitmap.getWidth();
                 if (resize.isChecked()) {
-                    double scale = 200. / (double)bitmap.getWidth();
+
                     if (scale < 1) {
                         bitmap = Bitmap.createScaledBitmap(bitmap, (int)(scale * bitmap.getWidth()), (int)(scale * bitmap.getHeight()), true);
                     }
@@ -113,17 +117,36 @@ public class MainActivity extends Activity {
                 Bitmap binaryBitmap = ImageUtils.getBinaryImage(bitmap, scheme);
                 inputImage.setImageBitmap(binaryBitmap);
 
-                final TextView blackThreshold = (TextView) findViewById(R.id.whiteThreshold);
-                blackThreshold.setText(Integer.toString(scheme.getThreshold()));
+//                final TextView blackThreshold = (TextView) findViewById(R.id.whiteThreshold);
+//                blackThreshold.setText(Integer.toString(scheme.getThreshold()));
+//
+//                List<Pair<Point, Point>> carPlateCorner = CharacterRecognitionUtils.recognizeSquareFromBitmap(binaryBitmap, scheme);
+//
+//                List<List<Character>> recognizedValues = new ArrayList<>();
+//
+//                if(carPlateCorner == null) {
+//                    recognizedValues = CharacterRecognitionUtils.recognizeBitmapPerLine(binaryBitmap, scheme);
+//                } else {
+//                    List<List<List<Character>>> recognizedSquares = new ArrayList<>();
+//                    for(int i = 0; i < carPlateCorner.size(); ++i) {
+//                        Bitmap carPlateBitmap = Bitmap.createBitmap(binaryBitmap, carPlateCorner.get(i).first.x, carPlateCorner.get(i).first.y,
+//                                carPlateCorner.get(i).second.x - carPlateCorner.get(i).first.x, carPlateCorner.get(i).second.y - carPlateCorner.get(i).first.y);
+//                        recognizedSquares.add(CharacterRecognitionUtils.recognizeBitmapPerLine(carPlateBitmap, scheme));
+//                    }
+//                    for(int i = 0; i < recognizedSquares.size(); ++i) {
+//                        for(int j = 0; j < recognizedSquares.get(i).size(); ++j) {
+//                            recognizedValues.add(recognizedSquares.get(i).get(j));
+//                        }
+//                    }
+//                }
+//
+//                StringBuilder builder = new StringBuilder();
+//                for (List<Character> line : recognizedValues) {
+//                    builder.append(Objects.toString(line));
+//                    builder.append("\n");
+//                }
+//                numRec.setText(builder.toString());
 
-                List<List<Character>> recognizedValues =
-                        CharacterRecognitionUtils.recognizeBitmapPerLine(binaryBitmap, scheme);
-                StringBuilder builder = new StringBuilder();
-                for (List<Character> line : recognizedValues) {
-                    builder.append(Objects.toString(line));
-                    builder.append("\n");
-                }
-                numRec.setText(builder.toString());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {

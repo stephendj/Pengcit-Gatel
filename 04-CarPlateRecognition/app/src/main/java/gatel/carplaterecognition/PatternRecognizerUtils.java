@@ -78,7 +78,7 @@ public class PatternRecognizerUtils {
                     } else if (edit[nr][nc - 1] + 1 == curEditDistance) {
                         nc--;
                     } else {
-                        throw new IllegalStateException("Edit distance is not tracable");
+                        throw new IllegalStateException("Edit distance is not traceable");
                     }
                 }
             }

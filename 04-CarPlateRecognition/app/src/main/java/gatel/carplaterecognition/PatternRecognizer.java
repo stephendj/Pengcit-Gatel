@@ -74,8 +74,67 @@ public class PatternRecognizer {
             }
         }
 
-
         return new PatternRecognizer(chainCodesPerLine);
+    }
+
+    public static List<Pair<Point, Point>> squareFromBitmap(Bitmap bitmap, ColorScheme scheme) {
+        // TODO: convert to B/W
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int size = width * height;
+        Log.d("PatternRecognizer#fromBitmap", String.format("Image size is %d x %d", width, height));
+        int[] pixels = new int[size];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        ChainCodeGenerator chainCodeGenerator = new ChainCodeGenerator(pixels, width, height, scheme);
+
+        List<Pair<Integer, Integer>> lines = new ArrayList<>();
+        List<List<List<Integer>>> chainCodesPerLine = new ArrayList<>();
+
+        List<Pair<Point, Point>> chosenPoints = new ArrayList<>();
+
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                int offset = x + y * width;
+                if (scheme.isForeground(pixels[offset])) {
+                    List<Integer> chainCode;
+                    try {
+                        chainCode = chainCodeGenerator.generateChainCode(x, y);
+                        Log.d("fromBitmap", Objects.toString(chainCode));
+                        Pair<Point, Point> bounds = floodFill(pixels, width, height, x, y, scheme);
+                        int bestLine = -1;
+                        int maxCollision = 0;
+                        for (int i = 0; i < lines.size(); ++i) {
+                            Pair<Integer, Integer> line = lines.get(i);
+                            int collision = Math.min(bounds.second.y, line.second) -
+                                    Math.max(bounds.first.y, line.first);
+                            if (collision > maxCollision) {
+                                bestLine = i;
+                                maxCollision = collision;
+                            }
+                        }
+                        Pair<Integer, Integer> lastLine = new Pair<>(bounds.first.y, bounds.second.y);
+                        if (bestLine < 0) {
+                            List<List<Integer>> chainCodeInNewLine = new ArrayList<>();
+                            chainCodeInNewLine.add(chainCode);
+                            chainCodesPerLine.add(chainCodeInNewLine);
+                            lines.add(lastLine);
+                        } else {
+                            chainCodesPerLine.get(bestLine).add(chainCode);
+                            lines.set(bestLine, lastLine);
+                        }
+
+                        Character recognized = recognizeChainCode(chainCode, CharacterRecognitionUtils.CHAIN_CODE_MAP);
+                        if(recognized == '`') {
+                            chosenPoints.add(bounds);
+                        }
+                    } catch (Exception e) {
+                        Log.d("PatternRecognizer#fromBitmap", "ChainCode failed to created");
+                    }
+                }
+            }
+        }
+
+        return chosenPoints;
     }
 
     /**
@@ -137,7 +196,7 @@ public class PatternRecognizer {
         return recognizedPatterns;
     }
 
-    public <T> T recognizeChainCode(List<Integer> chainCode, Multimap<T, List<Integer>> patterns) {
+    public static <T> T recognizeChainCode(List<Integer> chainCode, Multimap<T, List<Integer>> patterns) {
         T best = null;
         int minError = chainCode.size();
         int diffLength = 0;
@@ -177,7 +236,7 @@ public class PatternRecognizer {
      * Normalize the pattern so it (closely) matches the length by multiplying every element the
      * correct number of times.
      */
-    private List<Integer> normalizePattern(List<Integer> pattern, int length) {
+    private static List<Integer> normalizePattern(List<Integer> pattern, int length) {
         int patternLength = pattern.size();
         if (patternLength == 0) {
             return pattern;
