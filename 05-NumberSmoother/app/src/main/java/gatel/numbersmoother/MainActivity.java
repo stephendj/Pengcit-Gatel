@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -12,6 +14,7 @@ import android.widget.TextView;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class MainActivity extends Activity {
 
@@ -50,8 +53,13 @@ public class MainActivity extends Activity {
                 }
                 stream = getContentResolver().openInputStream(data.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
+                int threshold = ImageUtils.calculateThreshold(bitmap);
+                Bitmap binaryBitmap = ImageUtils.getBinaryImage(bitmap, threshold);
 
-                inputImage.setImageBitmap(bitmap);
+                inputImage.setImageBitmap(binaryBitmap);
+                List<Pair<Point, Point>> boundaries = NumberSmoother.getBoundaryPoints(binaryBitmap, threshold);
+
+                Bitmap[] numberBitmaps = NumberSmoother.getNumberBitmaps(binaryBitmap, boundaries);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {
