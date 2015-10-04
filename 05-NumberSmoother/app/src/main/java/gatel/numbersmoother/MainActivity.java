@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +23,7 @@ public class MainActivity extends Activity {
     private static final int REQUEST_CODE_BROWSE = 1;
     private ImageView inputImage;
     private TextView numRec;
+    private TextView codes;
     private Bitmap bitmap;
 
     @Override
@@ -29,6 +32,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         inputImage = (ImageView) findViewById(R.id.imageView);
         numRec = (TextView) findViewById(R.id.numRec);
+        codes = (TextView) findViewById(R.id.codes);
+        codes.setText("Turning Codes :\n1\n2\n3\n4\n5\n6\n");
     }
 
     public void pickImage(View View) {
@@ -59,7 +64,7 @@ public class MainActivity extends Activity {
                 inputImage.setImageBitmap(binaryBitmap);
                 List<Pair<Point, Point>> boundaries = NumberSmoother.getBoundaryPoints(binaryBitmap, threshold);
 
-                Bitmap[] numberBitmaps = NumberSmoother.getNumberBitmaps(binaryBitmap, boundaries);
+                Bitmap[] numberBitmaps = NumberSmoother.getNumberBitmaps(binaryBitmap, boundaries, threshold);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {

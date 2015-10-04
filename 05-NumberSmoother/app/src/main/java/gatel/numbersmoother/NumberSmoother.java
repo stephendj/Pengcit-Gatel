@@ -11,7 +11,7 @@ import java.util.Stack;
 
 public class NumberSmoother {
 
-    public static Bitmap[] getNumberBitmaps(Bitmap bitmap, List<Pair<Point, Point>> boundaries) {
+    public static Bitmap[] getNumberBitmaps(Bitmap bitmap, List<Pair<Point, Point>> boundaries, int threshold) {
         Bitmap[] numberBitmaps = new Bitmap[boundaries.size()];
         for(int i = 0 ; i < boundaries.size(); ++i) {
             Bitmap numberBitmap = Bitmap.createBitmap(5, 5, Bitmap.Config.RGB_565);
@@ -19,9 +19,49 @@ public class NumberSmoother {
             double dx = (double) (boundaries.get(i).second.x - boundaries.get(i).first.x) / 5;
             double dy = (double) (boundaries.get(i).second.y - boundaries.get(i).first.y) / 5;
 
-            for(double x = boundaries.get(i).first.x; Math.round(x) < boundaries.get(i).second.x; x+=dx) {
-                for(double y = boundaries.get(i).first.y; Math.round(y) < boundaries.get(i).second.y; y+=dy) {
-                    System.out.println(Math.round(x) + " " +  Math.round(y));
+            int j = 0;
+            int nbBlack = 0;
+            int nbTotal = 0;
+
+            System.out.println("Detecting for boundary : (" + boundaries.get(i).first.x + ", " + boundaries.get(i).first.y + "), (" + boundaries.get(i).second.x + ", " + boundaries.get(i).second.y + ")");
+
+            // iterasikan per kotak 1/5
+            for (double x = boundaries.get(i).first.x; Math.round(x) < boundaries.get(i).second.x; x += dx) {
+                for (double y = boundaries.get(i).first.y; Math.round(y) < boundaries.get(i).second.y; y += dy) {
+//                    System.out.println("checking in : " + j + " starting from : " + Math.round(x) + ", " + Math.round(y));
+                    // cari boundary
+                    int rightBoundary = (int) Math.round(x + dx);
+                    if (rightBoundary > boundaries.get(i).second.x - dx) {
+//                        System.out.println(">>> set right bound : " + rightBoundary);
+                        rightBoundary = boundaries.get(i).second.x + 1;
+                    }
+                    int bottomBoundary = (int) Math.round(y + dy);
+                    if (bottomBoundary > boundaries.get(i).second.y - dy) {
+//                        System.out.println(">>> set bottom bound : " + bottomBoundary);
+                        bottomBoundary = boundaries.get(i).second.y + 1;
+                    }
+                    // iterasikan di dalam kotak 1/5
+                    for (int xi = (int) Math.round(x); xi < rightBoundary; xi++) {
+                        for (int yi = (int) Math.round(y); yi < bottomBoundary; yi++) {
+//                            System.out.println("checking : " + Math.round(xi) + " " + Math.round(yi));
+                            if (ColorUtils.getGrayscale(bitmap.getPixel(xi,yi)) <= threshold) {
+                                nbBlack++;
+                            }
+                            nbTotal++;
+                        }
+                    }
+                    // hitung hasil per kotak 1/5
+//                    System.out.println("black : " + nbBlack + ", total : " + nbTotal);
+                    if (nbBlack >= nbTotal / 2) {
+                        System.out.println("set " + j / 5 + ", " + j % 5 + " : black");
+                        numberBitmap.setPixel(j / 5, j % 5, ColorUtils.BLACK);
+                    } else {
+                        System.out.println("set " + j / 5 + ", " + j % 5 + " : white");
+                        numberBitmap.setPixel(j / 5, j % 5, ColorUtils.WHITE);
+                    }
+                    nbBlack = 0;
+                    nbTotal = 0;
+                    j++;
                 }
             }
         }
