@@ -64,6 +64,7 @@ public class NumberSmoother {
                     j++;
                 }
             }
+            numberBitmaps [i] = numberBitmap;
         }
         return numberBitmaps;
     }

@@ -11,12 +11,16 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+
 import org.w3c.dom.Text;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends Activity {
 
@@ -53,7 +57,7 @@ public class MainActivity extends Activity {
         if (requestCode == REQUEST_CODE_BROWSE && resultCode == Activity.RESULT_OK) {
             try {
                 // recycle unused bitmaps
-                if (bitmap != null) {
+                if (bitmap != null)                 {
                     bitmap.recycle();
                 }
                 stream = getContentResolver().openInputStream(data.getData());
@@ -65,6 +69,23 @@ public class MainActivity extends Activity {
                 List<Pair<Point, Point>> boundaries = NumberSmoother.getBoundaryPoints(binaryBitmap, threshold);
 
                 Bitmap[] numberBitmaps = NumberSmoother.getNumberBitmaps(binaryBitmap, boundaries, threshold);
+
+                for (Bitmap current : numberBitmaps) {
+
+                    // Recognize the bitmap
+
+                    Multimap<Character, List<Integer>> CHAIN_CODE_MAP = ArrayListMultimap.create();
+                    PatternRecognizer recognizer = PatternRecognizer.fromBitmap(current, ColorScheme.DEFAULT_COLOR_SCHEME);
+                    List<List<Character>> recognizedValues = recognizer.recognizePatternPerLine(CHAIN_CODE_MAP);
+
+                    StringBuilder builder = new StringBuilder();
+                    for (List<Character> line : recognizedValues) {
+                        builder.append(Objects.toString(line));
+                        builder.append(", ");
+                    }
+                    numRec.setText(numRec.getText() + builder.toString());
+                }
+
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } finally {
