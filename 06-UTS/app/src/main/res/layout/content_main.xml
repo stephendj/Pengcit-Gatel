@@ -9,6 +9,24 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:showIn="@layout/activity_main" tools:context=".MainActivity">
 
-    <TextView android:text="Hello World!" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <ImageButton
+        android:id="@+id/browse"
+        android:layout_width="300px"
+        android:layout_height="300px"
+        android:background="@drawable/browse"
+        android:layout_above="@+id/camera"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="45dp"
+        android:onClick="pickImage" />
+
+    <ImageButton
+        android:id="@+id/camera"
+        android:layout_width="300px"
+        android:layout_height="300px"
+        android:background="@drawable/camera"
+        android:layout_marginBottom="129dp"
+        android:onClick="captureImage"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/browse" />
+
 </RelativeLayout>
