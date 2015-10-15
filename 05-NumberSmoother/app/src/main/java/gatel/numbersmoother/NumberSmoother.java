@@ -25,7 +25,6 @@ public class NumberSmoother {
 
             System.out.println("Detecting for boundary : (" + boundaries.get(i).first.x + ", " + boundaries.get(i).first.y + "), (" + boundaries.get(i).second.x + ", " + boundaries.get(i).second.y + ")");
 
-            // iterasikan per kotak 1/5
             for (double x = boundaries.get(i).first.x; Math.round(x) < boundaries.get(i).second.x; x += dx) {
                 for (double y = boundaries.get(i).first.y; Math.round(y) < boundaries.get(i).second.y; y += dy) {
 //                    System.out.println("checking in : " + j + " starting from : " + Math.round(x) + ", " + Math.round(y));
