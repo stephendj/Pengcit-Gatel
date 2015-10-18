@@ -1,5 +1,6 @@
 package gatel.uts;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,8 +11,11 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
@@ -23,7 +27,6 @@ public class PictureActivity extends AppCompatActivity {
 
     private Bitmap bitmap;
     private ImageView imageView;
-    private ImageEqualizer equalizer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +47,28 @@ public class PictureActivity extends AppCompatActivity {
 //        });
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        final Context that = this;
+        SeekBar sb = (SeekBar)findViewById(R.id.sb);
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                long timeStart = System.currentTimeMillis();
+                Bitmap bitmap = ImageEqualizer.equalize(progress);
+                imageView.setImageBitmap(bitmap);
+                long timeFinish = System.currentTimeMillis();
+//                Toast.makeText(that, String.format("Size = %d x %d, time elapsed: %d ms", bitmap.getWidth(), bitmap.getHeight(), (int)(timeFinish - timeStart)), Toast.LENGTH_SHORT).show();
+                Snackbar.make(seekBar, String.format("Size = %d x %d, time elapsed: %d ms", bitmap.getWidth(), bitmap.getHeight(), (int)(timeFinish - timeStart)),
+                        Snackbar.LENGTH_SHORT).setAction("Action", null).show();
+                Log.d("pictureActivity", String.format("Size = %d x %d, time elapsed: %d ms", bitmap.getWidth(), bitmap.getHeight(), (int)(timeFinish - timeStart)));
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         String filename = getIntent().getStringExtra("image");
         try {
             FileInputStream is = this.openFileInput(filename);
@@ -54,15 +79,19 @@ public class PictureActivity extends AppCompatActivity {
         }
 
         if(bitmap != null) {
-            equalizer = ImageEqualizer.create(bitmap);
-            imageView.setImageBitmap(equalizer.getBaseImage());
+            long timeStart = System.currentTimeMillis();
+            ImageEqualizer.registerBitmap(bitmap);
+            imageView.setImageBitmap(ImageEqualizer.getBaseImage());
+            long timeFinish = System.currentTimeMillis();
+            Toast.makeText(this, "time elapsed: " + (timeFinish - timeStart) + " ms", Toast.LENGTH_SHORT).show();
+            Log.d("pictureActivity", "time elapsed: " + (timeFinish - timeStart) + "ms");
 
             GraphView graph = (GraphView) findViewById(R.id.graph);
-            int[] frequency = equalizer.getColorFrequency();
+            int[] frequency = ImageEqualizer.getColorFrequency();
             LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
 
             int increment = 0;
-            for(Integer i : frequency) {
+            for (Integer i : frequency) {
                 series.appendData(new DataPoint(increment, i), false, 255);
                 ++increment;
             }
