@@ -3,7 +3,11 @@ package gatel.uts;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.Image;
 import android.media.audiofx.Equalizer;
 import android.os.Bundle;
@@ -11,6 +15,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Pair;
 import android.util.Range;
 import android.view.View;
 import android.widget.ImageView;
@@ -21,6 +26,7 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.io.FileInputStream;
+import java.util.List;
 
 public class PictureActivity extends AppCompatActivity {
 
@@ -63,8 +69,8 @@ public class PictureActivity extends AppCompatActivity {
 
         if(bitmap != null) {
             equalizer = ImageEqualizer.create(bitmap);
-            imageView.setImageBitmap(equalizer.getBaseImage());
-            imageViewBinary.setImageBitmap(equalizer.getBaseImage());
+            Bitmap equalizedBitmap = equalizer.getBaseImage();
+            imageView.setImageBitmap(equalizedBitmap);
 
             // Get the graphview and set the graphview
             GraphView graph = (GraphView) findViewById(R.id.graph);
@@ -84,6 +90,21 @@ public class PictureActivity extends AppCompatActivity {
 
             graph.addSeries(series);
             graph.addSeries(series2);
+
+            // Draw rectangle on recognized patterns
+            Bitmap tempBitmap = Bitmap.createBitmap(equalizedBitmap.getWidth(), equalizedBitmap.getHeight(), Bitmap.Config.RGB_565);
+            List<Pair<Point, Point>> boundaryPoints = PatternRecognizer.getBoundaryPoints(equalizedBitmap);
+
+            Canvas canvas = new Canvas(tempBitmap);
+            canvas.drawBitmap(equalizedBitmap, 0, 0, null);
+            Paint boxPaint = new Paint();
+            boxPaint.setColor(Color.RED);
+            boxPaint.setStyle(Paint.Style.STROKE);
+            for(Pair<Point, Point> boundaryPoint : boundaryPoints) {
+                canvas.drawRect(boundaryPoint.first.x -2 , boundaryPoint.first.y -2,
+                        boundaryPoint.second.x + 2, boundaryPoint.second.y + 2, boxPaint);
+            }
+            imageViewBinary.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));
         }
     }
 }
