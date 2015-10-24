@@ -1,5 +1,6 @@
 package gatel.uts;
 
+import android.app.ActionBar;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,19 +19,28 @@ import android.support.v7.widget.Toolbar;
 import android.util.Pair;
 import android.util.Range;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 
 import com.edmodo.rangebar.RangeBar;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import org.lucasr.twowayview.TwoWayView;
+
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PictureActivity extends AppCompatActivity {
 
     private Bitmap bitmap;
+    private Bitmap[] croppedBitmaps;
     private ImageEqualizer equalizer;
 
     private RangeBar rangeBar;
@@ -100,11 +110,39 @@ public class PictureActivity extends AppCompatActivity {
             Paint boxPaint = new Paint();
             boxPaint.setColor(Color.RED);
             boxPaint.setStyle(Paint.Style.STROKE);
+            croppedBitmaps = new Bitmap[boundaryPoints.size()];
+            int inc = 0;
             for(Pair<Point, Point> boundaryPoint : boundaryPoints) {
                 canvas.drawRect(boundaryPoint.first.x -2 , boundaryPoint.first.y -2,
                         boundaryPoint.second.x + 2, boundaryPoint.second.y + 2, boxPaint);
+                Bitmap croppedBitmap=Bitmap.createBitmap(equalizedBitmap, boundaryPoint.first.x -2, boundaryPoint.first.y -2,
+                        boundaryPoint.second.x - boundaryPoint.first.x + 4,
+                        boundaryPoint.second.y - boundaryPoint.first.y + 4);
+                croppedBitmaps[inc] = croppedBitmap;
+                ++inc;
             }
             imageViewBinary.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));
+
+            // Create cropped number bitmap from picture
+            LinearLayout mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+            for(int i = 0; i < croppedBitmaps.length; ++i) {
+                HorizontalScrollView horizontalScrollView = new HorizontalScrollView(this);
+                horizontalScrollView.setId(i);
+                LinearLayout linearLayout = new LinearLayout(this);
+                linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+                for(int j = 0; j < 3; ++j) {
+                    ImageView imageView = new ImageView(this);
+                    imageView.setId(Integer.valueOf(i + "" + j));
+                    imageView.setPadding(2, 2, 2, 2);
+                    imageView.setImageBitmap(croppedBitmaps[i]);
+                    imageView.setLayoutParams(new LinearLayout.LayoutParams(500, 500));
+                    imageView.setAdjustViewBounds(true);
+                    imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+                    linearLayout.addView(imageView);
+                }
+                horizontalScrollView.addView(linearLayout);
+                mainLayout.addView(horizontalScrollView);
+            }
         }
     }
 }
