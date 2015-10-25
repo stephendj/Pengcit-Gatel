@@ -25,6 +25,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.edmodo.rangebar.RangeBar;
 import com.jjoe64.graphview.GraphView;
@@ -115,15 +116,20 @@ public class PictureActivity extends AppCompatActivity {
             for(Pair<Point, Point> boundaryPoint : boundaryPoints) {
                 canvas.drawRect(boundaryPoint.first.x -2 , boundaryPoint.first.y -2,
                         boundaryPoint.second.x + 2, boundaryPoint.second.y + 2, boxPaint);
-                Bitmap croppedBitmap=Bitmap.createBitmap(equalizedBitmap, boundaryPoint.first.x -2, boundaryPoint.first.y -2,
-                        boundaryPoint.second.x - boundaryPoint.first.x + 4,
-                        boundaryPoint.second.y - boundaryPoint.first.y + 4);
+                Bitmap croppedBitmap=Bitmap.createBitmap(equalizedBitmap, boundaryPoint.first.x -1, boundaryPoint.first.y -1,
+                        boundaryPoint.second.x - boundaryPoint.first.x + 2,
+                        boundaryPoint.second.y - boundaryPoint.first.y + 2);
                 croppedBitmaps[inc] = croppedBitmap;
                 ++inc;
             }
             imageViewBinary.setImageDrawable(new BitmapDrawable(getResources(), tempBitmap));
 
-            // Create cropped number bitmap from picture
+            // Create the training set for classification
+            CharacterRecognitionUtils.addTrainingSet(
+                    BitmapFactory.decodeResource(getResources(), R.drawable.sample_fontplatnomor),
+                    "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+            // Create cropped number bitmap from picture and show the components
             LinearLayout mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
             for(int i = 0; i < croppedBitmaps.length; ++i) {
                 HorizontalScrollView horizontalScrollView = new HorizontalScrollView(this);
@@ -159,6 +165,15 @@ public class PictureActivity extends AppCompatActivity {
                 imageViewThinned.setScaleType(ImageView.ScaleType.FIT_XY);
                 linearLayout.addView(imageViewThinned);
 
+                // Show the recognized number
+                List<Character> recognizedValues = CharacterRecognitionUtils.recognizeBitmap(croppedBitmaps[i]);
+                TextView pattern = new TextView(this);
+                pattern.setPadding(2, 2, 2, 2);
+                pattern.setLayoutParams(new LinearLayout.LayoutParams(400, 400));
+                pattern.setText("Value : " + recognizedValues);
+                linearLayout.addView(pattern);
+
+                // Add the scrollview to the main layout
                 horizontalScrollView.addView(linearLayout);
                 mainLayout.addView(horizontalScrollView);
             }
