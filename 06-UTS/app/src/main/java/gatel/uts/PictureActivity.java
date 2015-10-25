@@ -130,16 +130,35 @@ public class PictureActivity extends AppCompatActivity {
                 horizontalScrollView.setId(i);
                 LinearLayout linearLayout = new LinearLayout(this);
                 linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-                for(int j = 0; j < 3; ++j) {
-                    ImageView imageView = new ImageView(this);
-                    imageView.setId(Integer.valueOf(i + "" + j));
-                    imageView.setPadding(2, 2, 2, 2);
-                    imageView.setImageBitmap(croppedBitmaps[i]);
-                    imageView.setLayoutParams(new LinearLayout.LayoutParams(500, 500));
-                    imageView.setAdjustViewBounds(true);
-                    imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-                    linearLayout.addView(imageView);
-                }
+
+                // Show the original cropped image
+                ImageView imageViewOri = new ImageView(this);
+                imageViewOri.setPadding(2, 2, 2, 2);
+                imageViewOri.setImageBitmap(croppedBitmaps[i]);
+                imageViewOri.setLayoutParams(new LinearLayout.LayoutParams(400, 400));
+                imageViewOri.setAdjustViewBounds(true);
+                imageViewOri.setScaleType(ImageView.ScaleType.FIT_XY);
+                linearLayout.addView(imageViewOri);
+
+                // Show the image that has been plotted to 5x5
+                ImageView imageViewPlotted = new ImageView(this);
+                imageViewPlotted.setPadding(2, 2, 2, 2);
+                imageViewPlotted.setImageBitmap(NumberSmoother.getNumberBitmap(equalizedBitmap, boundaryPoints.get(i)));
+                imageViewPlotted.setLayoutParams(new LinearLayout.LayoutParams(400, 400));
+                imageViewPlotted.setAdjustViewBounds(true);
+                imageViewPlotted.setScaleType(ImageView.ScaleType.FIT_XY);
+                linearLayout.addView(imageViewPlotted);
+
+                // Show the image that has been thinned using Zhang Suen Algorithm
+                Bitmap thinBitmap = ZhangSuen.thinImageBitmap(croppedBitmaps[i]);
+                ImageView imageViewThinned = new ImageView(this);
+                imageViewThinned.setPadding(2, 2, 2, 2);
+                imageViewThinned.setImageBitmap(thinBitmap);
+                imageViewThinned.setLayoutParams(new LinearLayout.LayoutParams(400, 400));
+                imageViewThinned.setAdjustViewBounds(true);
+                imageViewThinned.setScaleType(ImageView.ScaleType.FIT_XY);
+                linearLayout.addView(imageViewThinned);
+
                 horizontalScrollView.addView(linearLayout);
                 mainLayout.addView(horizontalScrollView);
             }
