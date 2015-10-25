@@ -1,7 +1,5 @@
 package gatel.uts;
 
-import android.app.ActionBar;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -9,39 +7,26 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.Image;
-import android.media.audiofx.Equalizer;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Pair;
-import android.util.Range;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 
 import com.edmodo.rangebar.RangeBar;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
-import org.lucasr.twowayview.TwoWayView;
-
 import java.io.FileInputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PictureActivity extends AppCompatActivity {
 
     private Bitmap bitmap;
     private Bitmap[] croppedBitmaps;
-    private ImageEqualizer equalizer;
 
     private RangeBar rangeBar;
     private ImageView imageView;
@@ -78,8 +63,9 @@ public class PictureActivity extends AppCompatActivity {
         }
 
         if(bitmap != null) {
-            equalizer = ImageEqualizer.create(bitmap);
-            Bitmap equalizedBitmap = equalizer.getBaseImage();
+            NativeLib.registerBitmap(bitmap);
+            NativeLib.equalize(0, 255);
+            Bitmap equalizedBitmap = NativeLib.getEqualizedBitmap();
             imageView.setImageBitmap(equalizedBitmap);
 
             // Get the graphview and set the graphview
@@ -87,15 +73,14 @@ public class PictureActivity extends AppCompatActivity {
             graph.getViewport().setXAxisBoundsManual(true);
             graph.getViewport().setMinX(0);
             graph.getViewport().setMaxX(255);
-            int[] frequency = equalizer.getColorFrequency();
+            int[] frequency = NativeLib.getFrequency();
+            int[] equalizedFrequency = NativeLib.getEqualizedFrequency();
             LineGraphSeries<DataPoint> series = new LineGraphSeries<>(); // First series
             LineGraphSeries<DataPoint> series2 = new LineGraphSeries<>(); series2.setColor(Color.RED); // Second series
 
-            int increment = 0;
-            for(Integer i : frequency) {
-                series.appendData(new DataPoint(increment, i), false, 256);
-                series2.appendData(new DataPoint(increment, i + 2000), false, 256);
-                ++increment;
+            for (int i = 0; i < 256; ++i) {
+                series.appendData(new DataPoint(i, frequency[i]), false, 256);
+                series2.appendData(new DataPoint(i, equalizedFrequency[i]), false, 256);
             }
 
             graph.addSeries(series);
