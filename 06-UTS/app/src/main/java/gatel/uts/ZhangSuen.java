@@ -23,7 +23,12 @@ public class ZhangSuen {
     }
 
     static Bitmap thinImageBitmap(Bitmap bitmap) {
-        thinBitmap = bitmap.copy(bitmap.getConfig(), true);
+        if (bitmap.getWidth() > 100 || bitmap.getHeight() > 100) {
+            float scale = Math.min(100F / bitmap.getWidth(), 100F / bitmap.getHeight());
+            thinBitmap = Bitmap.createScaledBitmap(bitmap, (int)(scale * bitmap.getWidth()), (int)(scale * bitmap.getHeight()), false);
+        } else {
+            thinBitmap = bitmap.copy(bitmap.getConfig(), true);
+        }
 
         boolean firstStep = false;
         boolean hasChanged;
@@ -56,7 +61,7 @@ public class ZhangSuen {
             }
 
             for (Point p : toWhite) {
-                System.out.println("turn white : " + p.x + ", " + p.y);
+//                System.out.println("turn white : " + p.x + ", " + p.y);
                 thinBitmap.setPixel(p.x, p.y, -1);
             }
             toWhite.clear();

@@ -44,6 +44,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        Bitmap sample = BitmapFactory.decodeResource(getResources(), R.drawable.sample_fontplatnomor);
+        Bitmap sampleResized = Bitmap.createScaledBitmap(sample, sample.getWidth() / 2, sample.getHeight() /2 , false);
+        NativeLib.registerPattern(sampleResized, "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
 
     public void pickImage(View View) {

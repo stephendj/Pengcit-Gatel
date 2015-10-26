@@ -4,6 +4,7 @@
 
 #include "image_processor.h"
 #include "image_utils.h"
+#include "component.h"
 #include <android/log.h>
 
 namespace processor {
@@ -15,12 +16,16 @@ namespace processor {
     static std::vector<unsigned char> binaryPixels;
     static int width = 0;
     static int height = 0;
+    static unsigned char threshold = 0;
 
     // Equalizer stuff
     static int frequency[256];
     static int cumulativeFrequency[256];
     static int equalizedFrequency[256];
     static int equalizedCumulativeFrequency[256];
+
+    // recognizer stuff
+    static std::vector<Component> components;
 
     void registerBitmap(int *_pixels, int _width, int _height) {
         __android_log_print(ANDROID_LOG_INFO, "Tag", "Registering bitmap of size %d x %d", _width, _height);
@@ -35,10 +40,12 @@ namespace processor {
                 ++i;
             }
         }
-        binaryPixels = equalizedPixels = grayscalePixels;
+        grayscalePixels;
         calculateFrequency();
 
-        util::convertGrayscaleToBinaryAndRemoveNoise(binaryPixels, width, height, frequency);
+        updateBinaryThreshold(util::calculateGrayscaleThreshold(frequency));
+
+        equalizedPixels = grayscalePixels;
         equalize(0, 255);
     }
 
@@ -72,8 +79,53 @@ namespace processor {
         for (int i = 0; i < size; ++i) {
             equalizedPixels[i] = pixelMap[grayscalePixels[i]];
         }
-//        binaryPixels = equalizedPixels;
-//        util::convertGrayscaleToBinaryAndRemoveNoise(binaryPixels, width, height, equalizedFrequency);
+    }
+
+    void updateBinaryThreshold(unsigned char _threshold) {
+        __android_log_print(ANDROID_LOG_INFO, "Tag", "Updating threshold to %d", _threshold);
+        threshold = _threshold;
+
+        // guess whether we should invert the color or not
+        int frequencyBelowThreshold = 0, frequencyAboveThreshold = 0;
+        for (int i = 0; i <= threshold; ++i) {
+            frequencyBelowThreshold += frequency[i];
+        }
+        for (int i = threshold + 1; i < 256; ++i) {
+            frequencyAboveThreshold += frequency[i];
+        }
+        bool invert = frequencyBelowThreshold > frequencyAboveThreshold;
+
+        binaryPixels = grayscalePixels;
+        util::convertGrayscaleToBinary(binaryPixels, width, height, threshold, invert);
+        util::removeNoise(binaryPixels, width, height);
+
+        process();
+    }
+
+    void process() {
+        components = Component::fromBitmap(binaryPixels, width, height);
+    }
+
+    std::string recognizePattern(recognizer::RecognizingMethod method) {
+        std::string result = "";
+        if (method == recognizer::CHAIN_CODE) {
+            for (int i = 0; i < components.size(); ++i) {
+                result += recognizer::ChainCodeRecognizer::recognizePattern(components[i].chainCode);
+            }
+        }
+        return result;
+    }
+
+    void registerPattern(std::string value) {
+        int size = value.size();
+        if (size != components.size()) {
+            __android_log_print(ANDROID_LOG_INFO, "Tag", "Failed to register pattern. Expecting %d values, but %d was found", size, components.size());
+        } else {
+            for (int i = 0; i < size; ++i) {
+                recognizer::ChainCodeRecognizer::registerPattern(components[i].chainCode, value[i]);
+            }
+            __android_log_print(ANDROID_LOG_INFO, "Tag", "Successfully register pattern: %s", value.c_str());
+        }
     }
 
     int getSize() {
@@ -109,4 +161,11 @@ namespace processor {
         }
     }
 
+    int getThreshold() {
+        return (int)threshold;
+    }
+
+    std::vector<Component>& getComponents() {
+        return components;
+    }
 }
