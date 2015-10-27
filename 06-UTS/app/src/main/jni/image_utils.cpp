@@ -134,7 +134,7 @@ namespace util {
         return chainCode;
     }
 
-    std::vector<std::vector<unsigned char> > generateGrid(const std::vector<unsigned char> &pixel, int width, int height, std::pair<point, point> boundary, int gridWidth, int gridHeight) {
+    std::vector<std::vector<unsigned char> > generateGrid(const std::vector<unsigned char> &pixel, int width, int height, std::pair<point, point> boundary, int gridWidth, int gridHeight, bool atLeastOne) {
         int dx = boundary.second.X - boundary.first.X + 1;
         int dy = boundary.second.Y - boundary.first.Y + 1;
 
@@ -155,10 +155,11 @@ namespace util {
                         }
                     }
                 }
-                if (nblack * 2 >= ntotal) {
-                    grid[x][y] = 1;
+//                 Uncomment for option at least half must be black to be marked
+                if (atLeastOne) {
+                    grid[x][y] = (nblack > 0) ? 1 : 0;
                 } else {
-                    grid[x][y] = 0;
+                    grid[x][y] = (nblack * 2 >= ntotal) ? 1 : 0;
                 }
             }
         }

@@ -25,5 +25,7 @@ namespace recognizer {
         static double calculateCircularDynamicTimeWarping(const std::vector<unsigned char> &a,
                                                    const std::vector<unsigned char> &b);
         static int calculateCost(unsigned char a, unsigned char b);
+        static double calculateDynamicTimeWarping(const std::vector<unsigned char> &patternA,
+                                       const std::vector<unsigned char> &patternB);
     };
 }

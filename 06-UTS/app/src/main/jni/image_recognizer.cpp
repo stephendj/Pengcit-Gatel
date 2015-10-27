@@ -14,6 +14,20 @@ namespace recognizer {
         savedChainCodes.insert(std::make_pair(value, pattern));
     }
 
+    // For circular DTW
+    int edit[MAX_DTW_LENGTH + 1][MAX_DTW_LENGTH + 1];
+
+    int costs[8][8] = {
+            {0, 1, 4, 9, 16, 9, 4, 1},
+            {1, 0, 1, 4, 9, 16, 9, 4},
+            {4, 1, 0, 1, 4, 9, 16, 9},
+            {9, 4, 1, 0, 1, 4, 9, 16},
+            {16, 9, 4, 1, 0, 1, 4, 9},
+            {9, 16, 9, 4, 1, 0, 1, 4},
+            {4, 9, 16, 9, 4, 1, 0, 1},
+            {1, 4, 9, 16, 9, 4, 1, 0}
+    };
+    char currentlyExaminedCharacter; // for debugging
     char ChainCodeRecognizer::recognizePattern(const std::vector<unsigned char> &pattern) {
         double timeStart = (double)clock() / CLOCKS_PER_SEC;
         // Circular Dynamic Time Warping
@@ -21,7 +35,8 @@ namespace recognizer {
         double minError = 1;
 
         for (std::multimap<char, std::vector<unsigned char> >::iterator it = savedChainCodes.begin(); it != savedChainCodes.end(); ++it) {
-            double error = calculateCircularDynamicTimeWarping(pattern, it->second);
+            currentlyExaminedCharacter = it->first;
+            double error = calculateDynamicTimeWarping(pattern, it->second);
             if (error < minError) {
                 best = it->first;
                 minError = error;
@@ -38,8 +53,37 @@ namespace recognizer {
         }
     }
 
-    // For circular DTW
-    int edit[MAX_DTW_LENGTH + 1][MAX_DTW_LENGTH + 1];
+    double ChainCodeRecognizer::calculateDynamicTimeWarping(
+            const std::vector<unsigned char> &patternA, const std::vector<unsigned char> &patternB) {
+        double timeStart = (double)clock() / CLOCKS_PER_SEC;
+        int lengthA = std::min((int)patternA.size(), MAX_DTW_LENGTH);
+        int lengthB = std::min((int)patternB.size(), MAX_DTW_LENGTH / 2);
+
+        edit[0][0] = 0;
+        for (int iA = 1; iA <= lengthA; ++iA) {
+            edit[iA][0] = 16 * iA;
+        }
+        for (int iB = 1; iB <= lengthB * 2; ++iB) {
+            edit[0][iB] = 16 * iB;
+        }
+        for (int iA = 1; iA <= lengthA; ++iA) {
+            unsigned char objectA = patternA[iA - 1];
+            for (int iB = 1; iB <= lengthB; ++iB) {
+                unsigned char objectB = patternB[iB - 1];
+                int cost = costs[objectA][objectB];
+                edit[iA][iB] = cost + std::min(edit[iA][iB - 1], std::min(edit[iA - 1][iB], edit[iA - 1][iB - 1]));
+                // double step
+                if (iA >= 2 && iB >= 2) {
+                    cost += costs[patternA[iA - 2]][patternB[iB - 2]];
+                    edit[iA][iB] = std::min(edit[iA][iB], cost + edit[iA - 2][iB - 2]);
+                }
+            }
+        }
+        int minEditDistance = edit[lengthA][lengthB];
+        double timeFinish = (double)clock() / CLOCKS_PER_SEC;
+        __android_log_print(ANDROID_LOG_INFO, "Tag", "%.3lf ms: Calculating DTW for [%c]: DTW size %d x %d: minError = %d (%.2lf %%)", (timeFinish - timeStart) * 1e3, currentlyExaminedCharacter, lengthA, lengthB, minEditDistance, (double)minEditDistance * 100. / lengthB);
+        return (double)minEditDistance / lengthB;
+    }
 
     double ChainCodeRecognizer::calculateCircularDynamicTimeWarping(
             const std::vector<unsigned char> &patternA, const std::vector<unsigned char> &patternB) {
@@ -51,19 +95,29 @@ namespace recognizer {
         for (int iA = 1; iA <= lengthA; ++iA) {
             edit[iA][0] = 16 * iA;
         }
-        for (int iB = 0; iB <= lengthB * 2; ++iB) {
+        for (int iB = 1; iB <= lengthB * 2; ++iB) {
             edit[0][iB] = 16 * iB;
         }
         for (int iA = 1; iA <= lengthA; ++iA) {
             unsigned char objectA = patternA[iA - 1];
-            for (int iB = 1; iB <= lengthB * 2; ++iB) {
-                unsigned char objectB = patternB[(iB - 1) % lengthB];
-                int cost = calculateCost(objectA, objectB);
+            for (int iB = 1; iB <= lengthB; ++iB) {
+                unsigned char objectB = patternB[iB - 1];
+                int cost = costs[objectA][objectB];
                 edit[iA][iB] = cost + std::min(edit[iA][iB - 1], std::min(edit[iA - 1][iB], edit[iA - 1][iB - 1]));
                 // double step
                 if (iA >= 2 && iB >= 2) {
-                    cost += calculateCost(patternA[iA - 2], patternB[(iB - 2) % lengthB]);
+                    cost += costs[patternA[iA - 2]][patternB[iB - 2]];
                     edit[iA][iB] = std::min(edit[iA][iB], cost + edit[iA - 2][iB - 2]);
+                }
+            }
+            for (int iB = 1; iB <= lengthB; ++iB) {
+                unsigned char objectB = patternB[iB - 1];
+                int cost = costs[objectA][objectB];
+                edit[iA][iB + lengthB] = cost + std::min(edit[iA][iB + lengthB - 1], std::min(edit[iA - 1][iB + lengthB], edit[iA - 1][iB + lengthB - 1]));
+                // double step
+                if (iA >= 2 && iB >= 2) {
+                    cost += costs[patternA[iA - 2]][patternB[iB - 2]];
+                    edit[iA][iB + lengthB] = std::min(edit[iA][iB + lengthB], cost + edit[iA - 2][iB + lengthB - 2]);
                 }
             }
         }
@@ -73,8 +127,8 @@ namespace recognizer {
             bool untraceable = false;
             while (!untraceable && nr > 0 && nc > iB - lengthB) {
                 unsigned char objectA = patternA[nr - 1];
-                unsigned char objectB = patternB[(nc - 1) % lengthB];
-                int cost = calculateCost(objectA, objectB);
+                unsigned char objectB = (nc - 1 < lengthB) ? patternB[nc - 1] : patternB[(nc - 1) - lengthB];
+                int cost = costs[objectA][objectB];
                 int curEditDistance = edit[nr][nc];
                 if (edit[nr - 1][nc] + cost == curEditDistance) {
                     nr--;
@@ -83,8 +137,8 @@ namespace recognizer {
                     nc--;
                 } else if (edit[nr][nc - 1] + cost == curEditDistance) {
                     nc--;
-                } else if (nr >= 2 && nc >= 2) {
-                    cost += calculateCost(patternA[nr - 2], patternB[(nc - 2) % lengthB]);
+                } else if (nr >= 2 && nc >= 2 + iB - lengthB) {
+                    cost += costs[patternA[nr - 2]][nc - 2 < lengthB ? patternB[nc - 2] : patternB[nc - 2 - lengthB]];
                     if (curEditDistance == cost + edit[nr - 2][nc - 2]) {
                         nr -= 2;
                         nc -= 2;
@@ -101,16 +155,7 @@ namespace recognizer {
             }
         }
         double timeFinish = (double)clock() / CLOCKS_PER_SEC;
-        __android_log_print(ANDROID_LOG_INFO, "Tag", "%.3lf ms: Calculating circular DTW for %d x %d: minError = %d (%.2lf %%)", (timeFinish - timeStart) * 1e3, lengthA, lengthB, minEditDistance, (double)minEditDistance * 100. / (lengthB * 16));
-        return (double)minEditDistance / (lengthB * 16);
-    }
-
-    int ChainCodeRecognizer::calculateCost(unsigned char a, unsigned char b) {
-        int cost = abs((int)a - b);
-        if (cost > 4) {
-            cost = 8 - cost;
-        }
-        cost *= cost;
-        return cost;
+        __android_log_print(ANDROID_LOG_INFO, "Tag", "%.3lf ms: Calculating circular DTW for [%c]: DTW size %d x %d: minError = %d (%.2lf %%)", (timeFinish - timeStart) * 1e3, currentlyExaminedCharacter, lengthA, lengthB, minEditDistance, (double)minEditDistance * 100. / lengthB);
+        return (double)minEditDistance / lengthB;
     }
 }

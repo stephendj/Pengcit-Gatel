@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Bitmap sample = BitmapFactory.decodeResource(getResources(), R.drawable.sample_fontplatnomor);
+        Bitmap sample = BitmapFactory.decodeResource(getResources(), R.drawable.sample_fontplatnomor_monochrome);
         Bitmap sampleResized = Bitmap.createScaledBitmap(sample, sample.getWidth() / 2, sample.getHeight() /2 , false);
         NativeLib.registerPattern(sampleResized, "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
@@ -148,10 +148,6 @@ public class MainActivity extends AppCompatActivity {
                 startPictureActivity();
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                Intent intent = new Intent(this, PictureActivity.class);
-                intent.putExtra("bitmap", bitmap);
-                startActivity(intent);
             }
         }
     }

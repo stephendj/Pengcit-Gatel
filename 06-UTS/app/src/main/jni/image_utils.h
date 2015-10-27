@@ -21,6 +21,6 @@ namespace util {
 
     std::vector<unsigned char> generateChainCode(const std::vector<unsigned char> &pixel, int width, int height, int x, int y);
 
-    std::vector<std::vector<unsigned char> > generateGrid(const std::vector<unsigned char> &pixel, int width, int height, std::pair<point, point> pair, int gridWidth, int gridHeight);
+    std::vector<std::vector<unsigned char> > generateGrid(const std::vector<unsigned char> &pixel, int width, int height, std::pair<point, point> pair, int gridWidth, int gridHeight, bool atLeastOne = false);
 
 }

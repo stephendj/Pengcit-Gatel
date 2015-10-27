@@ -28,10 +28,12 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PictureActivity extends AppCompatActivity {
 
     private static final int COMPONENT_SIZE = 200;
+    private static final int MAX_IMAGE_WIDTH = 300;
 
     private Bitmap bitmap;
     private Bitmap[] croppedBitmaps;
@@ -107,8 +109,10 @@ public class PictureActivity extends AppCompatActivity {
 
         if(bitmap != null) {
             // resize bitmap when necessary
-            if (bitmap.getWidth() > 600) {
-                bitmap = Bitmap.createScaledBitmap(bitmap, 600, bitmap.getHeight() * 600 / bitmap.getWidth(), false);
+            if (bitmap.getWidth() > MAX_IMAGE_WIDTH) {
+                Bitmap rescaledBitmap = Bitmap.createScaledBitmap(bitmap, MAX_IMAGE_WIDTH, bitmap.getHeight() * MAX_IMAGE_WIDTH / bitmap.getWidth(), false);
+                bitmap.recycle();
+                bitmap = rescaledBitmap;
             }
 
             long timeStart = System.currentTimeMillis();
@@ -126,6 +130,33 @@ public class PictureActivity extends AppCompatActivity {
 
     void showResult(Bitmap binaryBitmap, List<Bitmap> cropped, List<Bitmap> grids, List<Bitmap> thinned) {
         final List<TextView> textViews = new ArrayList<>();
+        final AtomicBoolean finishedRendered = new AtomicBoolean(false);
+
+        recognizedTextView.setText("Loading ...");
+
+        // Recognize pattern
+        new AsyncTask<Void, Void, String>() {
+
+            @Override
+            protected String doInBackground(Void... params) {
+                String recognized = NativeLib.recognizePattern();
+                while (!finishedRendered.get()) {} // busy waiting
+                return recognized;
+            }
+
+            @Override
+            protected void onPostExecute(String recognized) {
+                for (int i = 0; i < recognized.length(); ++i) {
+                    textViews.get(i).setText("Recognized Character: " + recognized.charAt(i));
+                }
+                List<String> recognizedPerLine = NativeLib.getRecognizedPaternPerLine(recognized);
+                StringBuilder builder = new StringBuilder();
+                for (String line : recognizedPerLine) {
+                    builder.append(line + "\n");
+                }
+                recognizedTextView.setText(builder.toString());
+            }
+        }.execute();
 
         mainLayout.removeAllViews();
         imageViewBinary.setImageBitmap(binaryBitmap);
@@ -176,29 +207,7 @@ public class PictureActivity extends AppCompatActivity {
             topLayout.addView(pattern);
             mainLayout.addView(topLayout);
         }
-        recognizedTextView.setText("Loading ...");
-
-        // Finally, recognize pattern
-        new AsyncTask<Void, Void, String>() {
-
-            @Override
-            protected String doInBackground(Void... params) {
-                return NativeLib.recognizePattern();
-            }
-
-            @Override
-            protected void onPostExecute(String recognized) {
-                for (int i = 0; i < recognized.length(); ++i) {
-                    textViews.get(i).setText("Recognized Character: " + recognized.charAt(i));
-                }
-                List<String> recognizedPerLine = NativeLib.getRecognizedPaternPerLine(recognized);
-                StringBuilder builder = new StringBuilder();
-                for (String line : recognizedPerLine) {
-                    builder.append(line + "\n");
-                }
-                recognizedTextView.setText(builder.toString());
-            }
-        }.execute();
+        finishedRendered.set(true);
     }
 
     private void processImageAndShowResult(final int newThreshold) {

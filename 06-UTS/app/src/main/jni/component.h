@@ -7,7 +7,7 @@
 #include <vector>
 #include "image_utils.h"
 
-#define GRID_SIZE 5
+#define GRID_SIZE 10
 
 struct Component {
     std::vector<unsigned char> chainCode;
