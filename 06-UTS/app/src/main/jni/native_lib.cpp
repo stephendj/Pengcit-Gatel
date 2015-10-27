@@ -49,6 +49,9 @@ JNIEXPORT jstring JNICALL
 
 JNIEXPORT void JNICALL
         Java_gatel_uts_NativeLib__1registerPattern(JNIEnv *env, jclass type, jstring value_);
+
+JNIEXPORT jobjectArray JNICALL
+        Java_gatel_uts_NativeLib__1getSortedComponent(JNIEnv *env, jclass type);
 }
 
 void Java_gatel_uts_NativeLib__1registerBitmap(JNIEnv *env, jclass type, jintArray pixels_, jint width,
@@ -174,11 +177,37 @@ jstring Java_gatel_uts_NativeLib__1recognizePattern(JNIEnv *env, jclass type) {
     return env->NewStringUTF(processor::recognizePattern(recognizer::CHAIN_CODE).c_str());
 }
 
-JNIEXPORT void JNICALL
-Java_gatel_uts_NativeLib__1registerPattern(JNIEnv *env, jclass type, jstring value_) {
+void Java_gatel_uts_NativeLib__1registerPattern(JNIEnv *env, jclass type, jstring value_) {
     const char *value = env->GetStringUTFChars(value_, 0);
 
     processor::registerPattern(value);
 
     env->ReleaseStringUTFChars(value_, value);
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_gatel_uts_NativeLib__1getSortedComponent(JNIEnv *env, jclass type) {
+
+    std::vector<std::vector<int> > arrangementVector = processor::getSortedComponent();
+    int nlines = arrangementVector.size();
+
+    jclass intArrayClass = env->FindClass("[I");
+    if (intArrayClass == NULL) {
+        return NULL;
+    }
+
+    jobjectArray arrangement = env->NewObjectArray((jsize) nlines, intArrayClass, NULL);
+
+    for (int i = 0; i < nlines; i++) {
+        jintArray line = env->NewIntArray(arrangementVector[i].size());
+        int *lineArray = new int[arrangementVector[i].size()];
+        for (int j = 0; j < arrangementVector[i].size(); ++j) {
+            lineArray[j] = arrangementVector[i][j];
+        }
+        env->SetIntArrayRegion(line, (jsize) 0, (jsize) arrangementVector[i].size(), (jint*) lineArray);
+        env->SetObjectArrayElement(arrangement, (jsize) i, line);
+        env->DeleteLocalRef(line);
+    }
+
+    return arrangement;
 }

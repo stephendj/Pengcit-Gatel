@@ -168,4 +168,46 @@ namespace processor {
     std::vector<Component>& getComponents() {
         return components;
     }
+
+    std::vector<std::vector<int> > getSortedComponent() {
+        std::vector<std::vector<int> > result;
+        std::vector<point> lines;
+        int ncomponents = components.size();
+
+        for (int i = 0; i < ncomponents; ++i) {
+            int bestline = -1;
+            int maxcollision = 0;
+            point cursor = std::make_pair(components[i].boundary.first.Y, components[i].boundary.second.Y);
+            for (int j = 0; j < lines.size(); ++j) {
+                if (lines[j].second < cursor.first || cursor.second < lines[j].first) {
+                    continue;
+                }
+                int collision = std::min(lines[j].second, cursor.second) - std::max(lines[j].first, cursor.first);
+                if (collision > maxcollision) {
+                    maxcollision = collision;
+                    bestline = j;
+                }
+            }
+            if (bestline == -1) {
+                lines.push_back(cursor);
+                result.push_back(std::vector<int>(1, i));
+            } else {
+                result[bestline].push_back(i);
+                lines[bestline].first = std::min(lines[bestline].first, cursor.first);
+                lines[bestline].second = std::max(lines[bestline].second, cursor.second);
+            }
+        }
+
+        // sort according to y
+        for (int i = 0; i < lines.size(); ++i) {
+            for (int j = i; j > 0; --j) {
+                if (lines[j].first < lines[j - 1].first) {
+                    std::swap(lines[j], lines[j - 1]);
+                    std::swap(result[j], result[j - 1]);
+                }
+            }
+        }
+
+        return result;
+    }
 }

@@ -112,6 +112,19 @@ public class NativeLib {
         _registerPattern(value);
     }
 
+    public static List<String> getRecognizedPaternPerLine(String pattern) {
+        int[][] arrangement = _getSortedComponent();
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < arrangement.length; ++i) {
+            StringBuilder builder = new StringBuilder();
+            for (int pos : arrangement[i]) {
+                builder.append(pattern.charAt(pos));
+            }
+            result.add(builder.toString());
+        }
+        return result;
+    }
+
     // Native methods declaration
     public static native void _registerBitmap(int[] pixels, int width, int height);
     public static native void _equalize(int lowerThreshold, int upperThreshold);
@@ -126,6 +139,7 @@ public class NativeLib {
     public static native int[][] _getGrids();
     public static native String _recognizePattern();
     public static native void _registerPattern(String value);
+    public static native int[][] _getSortedComponent();
 
     static {
         System.loadLibrary("native");

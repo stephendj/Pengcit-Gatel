@@ -26,6 +26,7 @@ namespace processor {
     void getGrayscaleImage(int *result);
     void getBinaryImage(int *result);
     int getThreshold();
+    std::vector<std::vector<int> > getSortedComponent();
 
     std::vector<Component>& getComponents();
 }

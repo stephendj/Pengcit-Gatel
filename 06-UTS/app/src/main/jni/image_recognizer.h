@@ -9,6 +9,7 @@
 #include <map>
 
 #define CHAINCODE_ERROR_THRESHOLD 0.5
+#define MAX_DTW_LENGTH 2048
 
 namespace recognizer {
     enum RecognizingMethod {
@@ -21,7 +22,8 @@ namespace recognizer {
         static char recognizePattern(const std::vector<unsigned char> &pattern);
 
     private:
-        static int calculateCircularDynamicTimeWarping(const std::vector<unsigned char> &a,
+        static double calculateCircularDynamicTimeWarping(const std::vector<unsigned char> &a,
                                                    const std::vector<unsigned char> &b);
+        static int calculateCost(unsigned char a, unsigned char b);
     };
 }

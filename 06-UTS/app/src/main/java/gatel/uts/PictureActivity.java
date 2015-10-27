@@ -17,6 +17,7 @@ import android.util.Pair;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.edmodo.rangebar.RangeBar;
@@ -36,11 +37,14 @@ public class PictureActivity extends AppCompatActivity {
     private Bitmap[] croppedBitmaps;
 
     private RangeBar rangeBar;
-    private RangeBar rangeBar2;
+    private SeekBar rangeBar2;
     private ImageView imageView;
     private ImageView imageViewBinary;
     private GraphView graphView;
     private LinearLayout mainLayout;
+
+    private TextView thresholdTextView;
+    private TextView recognizedTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,11 +70,22 @@ public class PictureActivity extends AppCompatActivity {
         });
 
         final Context context = this;
-        rangeBar2 = (RangeBar) findViewById(R.id.rangebar2);
-        rangeBar2.setOnRangeBarChangeListener(new RangeBar.OnRangeBarChangeListener() {
+        rangeBar2 = (SeekBar) findViewById(R.id.rangebar2);
+        rangeBar2.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onIndexChangeListener(RangeBar rangeBar, int leftThumbIndex, int rightThumbIndex) {
-                processImageAndShowResult(rightThumbIndex);
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                thresholdTextView.setText("Threshold: " + progress);
+                processImageAndShowResult(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
 
@@ -78,6 +93,8 @@ public class PictureActivity extends AppCompatActivity {
 
         graphView = (GraphView) findViewById(R.id.graph);
         mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+        thresholdTextView = (TextView) findViewById(R.id.thresholdTextView);
+        recognizedTextView = (TextView) findViewById(R.id.recognizedTextView);
 
         String filename = getIntent().getStringExtra("image");
         try {
@@ -102,7 +119,7 @@ public class PictureActivity extends AppCompatActivity {
             imageView.setImageBitmap(equalizedBitmap);
 
             updateGraph();
-            rangeBar2.setThumbIndices(0, NativeLib.getBinaryThreshold());
+            rangeBar2.setProgress(NativeLib.getBinaryThreshold());
             processImageAndShowResult(-1);
         }
     }
@@ -159,6 +176,7 @@ public class PictureActivity extends AppCompatActivity {
             topLayout.addView(pattern);
             mainLayout.addView(topLayout);
         }
+        recognizedTextView.setText("Loading ...");
 
         // Finally, recognize pattern
         new AsyncTask<Void, Void, String>() {
@@ -173,6 +191,12 @@ public class PictureActivity extends AppCompatActivity {
                 for (int i = 0; i < recognized.length(); ++i) {
                     textViews.get(i).setText("Recognized Character: " + recognized.charAt(i));
                 }
+                List<String> recognizedPerLine = NativeLib.getRecognizedPaternPerLine(recognized);
+                StringBuilder builder = new StringBuilder();
+                for (String line : recognizedPerLine) {
+                    builder.append(line + "\n");
+                }
+                recognizedTextView.setText(builder.toString());
             }
         }.execute();
     }
