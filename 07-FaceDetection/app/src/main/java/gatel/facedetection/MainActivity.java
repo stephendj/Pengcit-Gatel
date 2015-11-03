@@ -12,6 +12,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +28,9 @@ public class MainActivity extends AppCompatActivity {
     private Uri imageUri;
 
     private ImageView imageView;
+    private RadioGroup radioGroup;
+    private RadioButton homogenRadio;
+    private RadioButton differenceRadio;
 
     private int counter = 1;
 
@@ -34,6 +39,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         imageView = (ImageView) findViewById(R.id.imageView);
+        radioGroup = (RadioGroup) findViewById(R.id.radioGroup);
+        homogenRadio = (RadioButton) findViewById(R.id.homogen);
+        differenceRadio = (RadioButton) findViewById(R.id.difference);
+
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if(homogenRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.homogenConvert(greyScaleBitmap));
+                    }
+                } else if(differenceRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.differenceConvert(greyScaleBitmap));
+                    }
+                }
+            }
+        });
     }
 
     public void pickImage(View View) {
@@ -69,8 +93,17 @@ public class MainActivity extends AppCompatActivity {
                 stream = getContentResolver().openInputStream(data.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
 
-                Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
-                imageView.setImageBitmap(FaceDetection.homogenConvert(greyScaleBitmap));
+                if(homogenRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.homogenConvert(greyScaleBitmap));
+                    }
+                } else if(differenceRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.differenceConvert(greyScaleBitmap));
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -95,8 +128,17 @@ public class MainActivity extends AppCompatActivity {
 
                 bitmap = android.provider.MediaStore.Images.Media.getBitmap(cr, capturedImage);
 
-                Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
-                imageView.setImageBitmap(greyScaleBitmap);
+                if(homogenRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.homogenConvert(greyScaleBitmap));
+                    }
+                } else if(differenceRadio.isChecked()) {
+                    if(bitmap != null) {
+                        Bitmap greyScaleBitmap = ImageUtils.convertToGrayscale(bitmap);
+                        imageView.setImageBitmap(FaceDetection.differenceConvert(greyScaleBitmap));
+                    }
+                }
 
                 ++counter;
             } catch (Exception e) {

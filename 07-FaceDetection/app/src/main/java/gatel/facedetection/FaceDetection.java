@@ -24,7 +24,7 @@ public class FaceDetection {
                         ++i;
                     }
                 }
-                for(int j = 0; j < window.length; ++i) {
+                for(int j = 0; j < window.length; ++j) {
                     if(j != window.length/2) {
                         window[j] = Math.abs(window[window.length/2] - window[j]);
                     }
