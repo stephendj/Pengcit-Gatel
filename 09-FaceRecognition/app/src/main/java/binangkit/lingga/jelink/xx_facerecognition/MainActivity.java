@@ -56,8 +56,13 @@ public class MainActivity extends AppCompatActivity {
                 bitmap = BitmapFactory.decodeStream(stream);
 
                 inputImage.setImageBitmap(bitmap);
-                Bitmap bwBitmap = ImageUtil.makeBlackAndWhite(bitmap, 150);
-                Bitmap clusteredBitmap = ImageUtil.makeMarkedClusterImage(bwBitmap);
+//                Bitmap bwBitmap = KMeans.makeBlackAndWhite(bitmap, 150);
+//                Bitmap clusteredBitmap = KMeans.makeMarkedClusterImage(bwBitmap);
+//                outImage.setImageBitmap(clusteredBitmap);
+                Bitmap gsBitmap = ImageUtils.convertToGrayscale(bitmap);
+                Bitmap opBitmap = KirschOperator.convertImage(gsBitmap);
+                Bitmap bwBitmap = ImageUtils.getBinaryImage(opBitmap);
+                Bitmap clusteredBitmap = KMeans.makeMarkedClusterImage(bwBitmap);
                 outImage.setImageBitmap(clusteredBitmap);
 
             } catch (FileNotFoundException e) {
@@ -72,7 +77,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-
-        //ZhangSuen.main(new String[0]);
     }
 }

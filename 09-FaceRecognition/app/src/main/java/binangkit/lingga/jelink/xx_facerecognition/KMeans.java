@@ -8,12 +8,7 @@ import android.os.Debug;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-/**
- * Created by jelink on 11/10/2015.
- */
-public class ImageUtil {
-
-//    private static ArrayList<Point> list_black_points = new ArrayList<>();
+public class KMeans {
 
     public static Bitmap makeBlackAndWhite(Bitmap image, int threshold) {
         Bitmap bwImage = image.copy(image.getConfig(), true);
@@ -84,7 +79,7 @@ public class ImageUtil {
 
             for (int j = 0; j < image.getHeight(); j++) {
                 for (int i = 0; i < image.getWidth(); i++) {
-                    if (image.getPixel(i, j) == Color.BLACK) {
+                    if (image.getPixel(i, j) == Color.BLACK && (j!=0 && i!=0 && j!=image.getHeight()-1 && i!=image.getWidth()-1)) {
                         int idx = getClosestCentroidIndex(centroids, new Point(i, j));
                         switch (idx) {
                             case 0:
@@ -96,15 +91,17 @@ public class ImageUtil {
                                 rightEyePoints.add(new Point(i, j));
                                 break;
                             case 2:
-                                processing_image.setPixel(i, j, Color.YELLOW);
+                                processing_image.setPixel(i, j, Color.GREEN);
                                 nosePoints.add(new Point(i, j));
                                 break;
                             case 3:
-                                processing_image.setPixel(i, j, Color.GRAY);
+                                processing_image.setPixel(i, j, Color.CYAN);
                                 mouthPoints.add(new Point(i, j));
                                 break;
                         }
 //                        System.out.println("pada " + i + ", " + j + " indexnya " + idx);
+                    } else if(j==0 || i==0 || j==image.getHeight()-1 || i==image.getWidth()-1) {
+                        processing_image.setPixel(i, j, Color.WHITE);
                     }
                 }
             }
@@ -126,8 +123,11 @@ public class ImageUtil {
             new_x += p.x;
             new_y += p.y;
         }
-        new_x = new_x/collection.size();
-        new_y = new_y/collection.size();
+        if(collection.size() != 0) {
+            new_x = new_x/collection.size();
+            new_y = new_y/collection.size();
+        }
+
         System.out.println("Update centroid ke : " + new_x + ", " + new_y);
         return new Point(new_x, new_y);
     }
