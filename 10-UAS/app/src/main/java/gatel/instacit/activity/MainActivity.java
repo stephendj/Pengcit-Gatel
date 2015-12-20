@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         menu = (FloatingActionsMenu) findViewById(R.id.fab_menu);
         mainImageView = (ImageView) findViewById(R.id.image_view_main);
