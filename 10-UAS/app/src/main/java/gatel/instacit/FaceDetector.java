@@ -21,7 +21,9 @@ import java.util.Stack;
 public class FaceDetector {
 
     private static final List<Integer> SKIN_COLORS = new ArrayList<>();
+    private static final int MAX_SIZE = 512 * 512;
     private static final int FLOOD_FILL_GAP = 3;
+
     public static int SKIN_THRESHOLD = 15;
     private static int SIZE_THRESHOLD = 10;
 
@@ -34,7 +36,6 @@ public class FaceDetector {
         registerSkinColor(Color.rgb(161, 130, 110)); // jidat Yanfa "bercahaya"
         registerSkinColor(Color.rgb(182, 136, 103)); // pipi Afik
         registerSkinColor(Color.rgb(175, 158, 128)); // jidat Zaky
-
     }
 
     public static void registerSkinColor(int color) {
@@ -53,6 +54,7 @@ public class FaceDetector {
     }
 
     public static boolean[] mark;
+    public static final int[] stack = new int[MAX_SIZE];
 
     public static List<Pair<Point, Point>> getBoundaries(Bitmap bitmap) {
         int width = bitmap.getWidth();
@@ -67,8 +69,7 @@ public class FaceDetector {
         List<Pair<Point, Point>> numberBoundaries = new ArrayList<>();
 
         for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                int offset = x + y * width;
+            for (int y = 0, offset = x; y < height; ++y, offset += y) {
                 if (isSkinColor(pixels[offset]) && !visited[offset]) {
                     try {
                         Pair<Point, Point> bounds = floodFill(pixels, visited, width, height, x, y);
@@ -77,8 +78,8 @@ public class FaceDetector {
                         if (Math.min(boundHeight, boundWidth) > SIZE_THRESHOLD) {
                             numberBoundaries.add(bounds);
                         }
-                        Log.d("FaceDetector#getBoundaryPoints", "Boundary : (" + bounds.first.x + "," + bounds.first.y + "),"
-                                + "(" + bounds.second.x + "," + bounds.second.y + ")");
+//                        Log.d("FaceDetector#getBoundaryPoints", "Boundary : (" + bounds.first.x + "," + bounds.first.y + "),"
+//                                + "(" + bounds.second.x + "," + bounds.second.y + ")");
                     } catch (Exception e) {
                         Log.d("FaceDetector#getBoundaryPoints", "Failed to find boundary points: " + e.getMessage());
                     }
@@ -93,17 +94,17 @@ public class FaceDetector {
      * @return the bounding box of the component.
      */
     private static Pair<Point, Point> floodFill(int[] pixels, boolean[] visited, int width, int height, int startX, int startY) {
-        Log.d("FaceDetector#floodFill", String.format("Starting Flood Fill from (%d, %d)", startX, startY));
+//        Log.d("FaceDetector#floodFill", String.format("Starting Flood Fill from (%d, %d)", startX, startY));
         if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
             throw new IllegalStateException("Flood fill starting from out of bounds position");
         }
         int minX = startX, maxX = startX, minY = startY, maxY = startY;
-        Stack<Integer> stack = new Stack<>();
+        int stackTop = 0;
         int offset = startY * width + startX;
-        stack.push(offset);
+        stack[stackTop++] = offset;
         visited[offset] = true;
-        while (!stack.empty()) {
-            int top = stack.pop();
+        while (stackTop > 0) {
+            int top = stack[--stackTop];
             int x = top % width;
             int y = top / width;
             minX = Math.min(minX, x);
@@ -117,7 +118,7 @@ public class FaceDetector {
                     }
                     int newOffset = iy * width + ix;
                     if (!visited[newOffset] && isSkinColor(pixels[newOffset])) {
-                        stack.push(newOffset);
+                        stack[stackTop++] = newOffset;
                         visited[newOffset] = true;
                     }
                 }

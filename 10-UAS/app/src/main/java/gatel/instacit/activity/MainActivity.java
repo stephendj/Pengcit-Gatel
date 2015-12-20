@@ -10,11 +10,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Pair;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
@@ -26,16 +29,18 @@ import java.util.List;
 
 import gatel.instacit.FaceDetector;
 import gatel.instacit.R;
-import gatel.instacit.ImageUtils;
+import gatel.instacit.utils.ImageUtils;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_BROWSE = 1;
     private static final int REQUEST_CODE_CAPTURE = 2;
+    private static final int COMPONENT_SIZE = 300;
 
     private FloatingActionsMenu menu;
     private Uri tempImageUri;
     private ImageView mainImageView;
+    private LinearLayout resultLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
         menu = (FloatingActionsMenu) findViewById(R.id.fab_menu);
         mainImageView = (ImageView) findViewById(R.id.image_view_main);
+        resultLayout = (LinearLayout) findViewById(R.id.result_layout);
     }
 
     public void browseImage(View view) {
@@ -120,11 +126,53 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Failure on loading bitmap", Toast.LENGTH_SHORT).show();
             return;
         }
+        long startTime = System.currentTimeMillis();
+
         bitmap = ImageUtils.rescaleAndRecycleBitmap(bitmap);
+//        Bitmap blurredBitmap = GaussianBlur.fromBitmap(bitmap).blurBitmap(5);
 
         List<Pair<Point, Point>> boundaryPoints = FaceDetector.getBoundaries(bitmap);
 
         Bitmap taggedBitmap = FaceDetector.generateTaggedBitmap(bitmap, boundaryPoints);
         mainImageView.setImageDrawable(new BitmapDrawable(getResources(), taggedBitmap));
+
+        // TODO: move this to a separate function
+        resultLayout.removeAllViews();
+        for (Pair<Point, Point> boundaryPoint : boundaryPoints) {
+            // initialize layout
+            LinearLayout topLayout = new LinearLayout(this);
+            topLayout.setOrientation(LinearLayout.VERTICAL);
+            HorizontalScrollView horizontalScrollView = new HorizontalScrollView(this);
+            horizontalScrollView.setId(boundaryPoints.indexOf(boundaryPoint));
+            LinearLayout linearLayout = new LinearLayout(this);
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+            // cropped image
+            int topx = Math.max(boundaryPoint.first.x - 2, 0);
+            int topy = Math.max(boundaryPoint.first.y - 2, 0);
+            int bottomx = Math.min(boundaryPoint.second.x + 2, bitmap.getWidth() - 1);
+            int bottomy = Math.min(boundaryPoint.second.y + 2, bitmap.getHeight() - 1);
+            Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, topx , topy, bottomx - topx, bottomy - topy);
+            ImageView imageViewOri = new ImageView(this);
+            imageViewOri.setPadding(2, 2, 2, 2);
+            imageViewOri.setImageBitmap(croppedBitmap);
+            imageViewOri.setLayoutParams(new LinearLayout.LayoutParams(COMPONENT_SIZE, COMPONENT_SIZE));
+            imageViewOri.setAdjustViewBounds(true);
+            imageViewOri.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            linearLayout.addView(imageViewOri);
+
+            // Pack them altogether
+            horizontalScrollView.addView(linearLayout);
+            topLayout.addView(horizontalScrollView);
+            resultLayout.addView(topLayout);
+        }
+
+        // recycle unused bitmaps
+//        bitmap.recycle();
+//        blurredBitmap.recycle();
+
+        long finishTime = System.currentTimeMillis();
+        Toast.makeText(MainActivity.this, "Running Time (" + bitmap.getWidth() + "x" + bitmap.getHeight() + "): " + (finishTime - startTime) + " ms", Toast.LENGTH_SHORT).show();
     }
+
 }
