@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Pair;
@@ -29,7 +28,10 @@ import java.util.List;
 
 import gatel.instacit.FaceDetector;
 import gatel.instacit.R;
+import gatel.instacit.utils.GaussianBlur;
 import gatel.instacit.utils.ImageUtils;
+import gatel.instacit.utils.KMeans;
+import gatel.instacit.utils.KirschOperator;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -128,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         }
         long startTime = System.currentTimeMillis();
 
-        bitmap = ImageUtils.rescaleAndRecycleBitmap(bitmap);
+        bitmap = ImageUtils.rescaleAndRecycleBitmap(ImageUtils.convertAndRecycleBitmap(bitmap, Bitmap.Config.RGB_565));
 //        Bitmap blurredBitmap = GaussianBlur.fromBitmap(bitmap).blurBitmap(5);
 
         List<Pair<Point, Point>> boundaryPoints = FaceDetector.getBoundaries(bitmap);
@@ -153,13 +155,26 @@ public class MainActivity extends AppCompatActivity {
             int bottomx = Math.min(boundaryPoint.second.x + 2, bitmap.getWidth() - 1);
             int bottomy = Math.min(boundaryPoint.second.y + 2, bitmap.getHeight() - 1);
             Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, topx , topy, bottomx - topx, bottomy - topy);
-            ImageView imageViewOri = new ImageView(this);
-            imageViewOri.setPadding(2, 2, 2, 2);
-            imageViewOri.setImageBitmap(croppedBitmap);
-            imageViewOri.setLayoutParams(new LinearLayout.LayoutParams(COMPONENT_SIZE, COMPONENT_SIZE));
-            imageViewOri.setAdjustViewBounds(true);
-            imageViewOri.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            ImageView imageViewOri = createImageViewForComponent(croppedBitmap);
             linearLayout.addView(imageViewOri);
+
+            // face!
+            Bitmap gsBitmap = ImageUtils.convertToGrayscale(croppedBitmap);
+//            Bitmap gsBlurredBitmap = GaussianBlur.fromBitmap(gsBitmap).blurBitmap(3);
+            Bitmap opBitmap = KirschOperator.convertImage(gsBitmap);
+            Bitmap bwBitmap = ImageUtils.getBinaryImage(opBitmap, 40);
+            Bitmap trimmedBitmap = ImageUtils.trimSurrounding(bwBitmap);
+            Bitmap clusteredBitmap = KMeans.makeMarkedClusterImage(trimmedBitmap);
+            ImageView imageViewGrayscale = createImageViewForComponent(gsBitmap);
+            linearLayout.addView(imageViewGrayscale);
+//            ImageView imageViewBlurredGrayscale = createImageViewForComponent(gsBlurredBitmap);
+//            linearLayout.addView(imageViewBlurredGrayscale);
+            ImageView imageViewBlackWhite = createImageViewForComponent(bwBitmap);
+            linearLayout.addView(imageViewBlackWhite);
+            ImageView imageViewTrimmed = createImageViewForComponent(trimmedBitmap);
+            linearLayout.addView(imageViewTrimmed);
+            ImageView imageViewMarked = createImageViewForComponent(clusteredBitmap);
+            linearLayout.addView(imageViewMarked);
 
             // Pack them altogether
             horizontalScrollView.addView(linearLayout);
@@ -173,6 +188,16 @@ public class MainActivity extends AppCompatActivity {
 
         long finishTime = System.currentTimeMillis();
         Toast.makeText(MainActivity.this, "Running Time (" + bitmap.getWidth() + "x" + bitmap.getHeight() + "): " + (finishTime - startTime) + " ms", Toast.LENGTH_SHORT).show();
+    }
+
+    private ImageView createImageViewForComponent(Bitmap clusteredBitmap) {
+        ImageView imageView = new ImageView(this);
+        imageView.setPadding(2, 2, 2, 2);
+        imageView.setImageBitmap(clusteredBitmap);
+        imageView.setLayoutParams(new LinearLayout.LayoutParams(COMPONENT_SIZE, COMPONENT_SIZE));
+        imageView.setAdjustViewBounds(true);
+        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        return imageView;
     }
 
 }

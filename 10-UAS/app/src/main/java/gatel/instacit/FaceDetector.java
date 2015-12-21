@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.Log;
 import android.util.Pair;
@@ -15,13 +16,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import gatel.instacit.utils.ImageUtils;
+
 /**
  * Created by Toshiba on 11/18/2015.
  */
 public class FaceDetector {
 
     private static final List<Integer> SKIN_COLORS = new ArrayList<>();
-    private static final int MAX_SIZE = 512 * 512;
     private static final int FLOOD_FILL_GAP = 3;
 
     public static int SKIN_THRESHOLD = 15;
@@ -54,40 +56,56 @@ public class FaceDetector {
     }
 
     public static boolean[] mark;
-    public static final int[] stack = new int[MAX_SIZE];
+    public static final int[] stack = new int[ImageUtils.MAX_IMAGE_AREA];
 
     public static List<Pair<Point, Point>> getBoundaries(Bitmap bitmap) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         int size = width * height;
         Log.d("FaceDetector#getBoundaryPoints", String.format("Image size is %d x %d", width, height));
-        int[] pixels = new int[size];
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-        boolean[] visited = new boolean[size];
-        mark = visited;
 
-        List<Pair<Point, Point>> numberBoundaries = new ArrayList<>();
-
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0, offset = x; y < height; ++y, offset += y) {
-                if (isSkinColor(pixels[offset]) && !visited[offset]) {
-                    try {
-                        Pair<Point, Point> bounds = floodFill(pixels, visited, width, height, x, y);
-                        int boundWidth = bounds.second.x - bounds.first.x;
-                        int boundHeight = bounds.second.y - bounds.first.y;
-                        if (Math.min(boundHeight, boundWidth) > SIZE_THRESHOLD) {
-                            numberBoundaries.add(bounds);
-                        }
-//                        Log.d("FaceDetector#getBoundaryPoints", "Boundary : (" + bounds.first.x + "," + bounds.first.y + "),"
-//                                + "(" + bounds.second.x + "," + bounds.second.y + ")");
-                    } catch (Exception e) {
-                        Log.d("FaceDetector#getBoundaryPoints", "Failed to find boundary points: " + e.getMessage());
-                    }
-                }
-            }
+        // using android for now ...
+        android.media.FaceDetector nativeFaceDetector = new android.media.FaceDetector(width, height, 25);
+        android.media.FaceDetector.Face[] faces = new android.media.FaceDetector.Face[25];
+        int nFaces = nativeFaceDetector.findFaces(bitmap, faces);
+        Log.d("Faces", nFaces + " faces found " + bitmap.getConfig());
+        List<Pair<Point, Point>> faceBoundaries = new ArrayList<>();
+        for (int i = 0; i < nFaces; ++i) {
+            PointF center = new PointF();
+            faces[i].getMidPoint(center);
+            float radius = faces[i].eyesDistance();
+            Point topLeft = new Point((int)(center.x - radius), (int)(center.y - radius));
+            Point bottomRight = new Point((int)(center.x + radius), (int)(center.y + 1.618F * radius));
+            faceBoundaries.add(new Pair<Point, Point>(topLeft, bottomRight));
         }
 
-        return numberBoundaries;
+//        int[] pixels = new int[size];
+//        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+//        boolean[] visited = new boolean[size];
+//        mark = visited;
+//
+//        List<Pair<Point, Point>> faceBoundaries = new ArrayList<>();
+//
+//        for (int x = 0; x < width; ++x) {
+//            for (int y = 0, offset = x; y < height; ++y, offset += y) {
+//                if (isSkinColor(pixels[offset]) && !visited[offset]) {
+//                    try {
+//                        Pair<Point, Point> bounds = floodFill(pixels, visited, width, height, x, y);
+//                        int boundWidth = bounds.second.x - bounds.first.x;
+//                        int boundHeight = bounds.second.y - bounds.first.y;
+//                        if (Math.min(boundHeight, boundWidth) > SIZE_THRESHOLD) {
+//                            faceBoundaries.add(bounds);
+//                        }
+////                        Log.d("FaceDetector#getBoundaryPoints", "Boundary : (" + bounds.first.x + "," + bounds.first.y + "),"
+////                                + "(" + bounds.second.x + "," + bounds.second.y + ")");
+//                    } catch (Exception e) {
+//                        Log.d("FaceDetector#getBoundaryPoints", "Failed to find boundary points: " + e.getMessage());
+//                    }
+//                }
+//            }
+//        }
+
+        return faceBoundaries;
     }
 
     /**
@@ -131,29 +149,28 @@ public class FaceDetector {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Bitmap tempBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.RGB_565);
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                if (FaceDetector.mark[x + y * width]) {
-                    tempBitmap.setPixel(x, y, Color.GREEN);
-                }
-            }
-        }
+//        for (int x = 0; x < width; ++x) {
+//            for (int y = 0; y < height; ++y) {
+//                if (FaceDetector.mark[x + y * width]) {
+//                    tempBitmap.setPixel(x, y, Color.GREEN);
+//                }
+//            }
+//        }
         Canvas canvas = new Canvas(tempBitmap);
         canvas.drawBitmap(bitmap, 0, 0, null);
         Paint boxPaint = new Paint();
         boxPaint.setColor(Color.RED);
         boxPaint.setStyle(Paint.Style.STROKE);
+        boxPaint.setStrokeWidth(5);
         for(Pair<Point, Point> boundaryPoint : boundaryPoints) {
             canvas.drawRect(Math.max(boundaryPoint.first.x - 2, 0) , Math.max(boundaryPoint.first.y - 2, 0),
                     Math.min(boundaryPoint.second.x + 2, width - 1), Math.min(boundaryPoint.second.y + 2, height - 1), boxPaint);
         }
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                if (FaceDetector.mark[x + y * width]) {
-                    tempBitmap.setPixel(x, y, Color.GREEN);
-                }
-            }
-        }
+//        for (int i = 0; i < nFaces; ++i) {
+//            PointF point = new PointF();
+//            faces[i].getMidPoint(point);
+//            canvas.drawCircle(point.x, point.y, faces[i].eyesDistance(), boxPaint);
+//        }
         return tempBitmap;
     }
 }

@@ -10,9 +10,8 @@ import android.util.Log;
  */
 public class GaussianBlur {
 
-    private static final int MAX_SIZE = 512 * 512;
-    private static final int source[] = new int[MAX_SIZE];
-    private static final int target[] = new int[MAX_SIZE];
+    private static final int source[] = new int[ImageUtils.MAX_IMAGE_AREA];
+    private static final int target[] = new int[ImageUtils.MAX_IMAGE_AREA];
 
     private final int width;
     private final int height;
