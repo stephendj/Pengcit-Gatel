@@ -93,7 +93,7 @@ public class KirschOperator {
                 } else if(magnitudeApprox > 255) {
                     magnitudeApprox = 255;
                 }
-                newImage.setPixel(x, y, magnitudeApprox);
+                newImage.setPixel(x, y, magnitudeApprox * ImageUtils.GRAYSCALE_MASK);
             }
         }
 

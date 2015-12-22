@@ -29,14 +29,20 @@
             android:layout_marginBottom="5dp"
             android:layout_marginTop="5dp"/>
 
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_margin="@dimen/text_margin" android:text="Hasil Klasifikasi"
+            android:textSize="36dp"
+            android:textStyle="bold" />
+
         <LinearLayout
             android:id="@+id/result_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"></LinearLayout>
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_margin="@dimen/text_margin" android:text="@string/large_text" />
+        <!--<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"-->
+            <!--android:layout_margin="@dimen/text_margin" android:text="@string/large_text" />-->
     </LinearLayout>
 
 </android.support.v4.widget.NestedScrollView>

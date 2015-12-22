@@ -166,11 +166,6 @@ public class FaceDetector {
             canvas.drawRect(Math.max(boundaryPoint.first.x - 2, 0) , Math.max(boundaryPoint.first.y - 2, 0),
                     Math.min(boundaryPoint.second.x + 2, width - 1), Math.min(boundaryPoint.second.y + 2, height - 1), boxPaint);
         }
-//        for (int i = 0; i < nFaces; ++i) {
-//            PointF point = new PointF();
-//            faces[i].getMidPoint(point);
-//            canvas.drawCircle(point.x, point.y, faces[i].eyesDistance(), boxPaint);
-//        }
         return tempBitmap;
     }
 }

@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
@@ -27,7 +28,10 @@ import java.io.InputStream;
 import java.util.List;
 
 import gatel.instacit.FaceDetector;
+import gatel.instacit.Person;
+import gatel.instacit.PersonClassifier;
 import gatel.instacit.R;
+import gatel.instacit.utils.FacePartConverter;
 import gatel.instacit.utils.GaussianBlur;
 import gatel.instacit.utils.ImageUtils;
 import gatel.instacit.utils.KMeans;
@@ -51,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
+        PersonClassifier.loadDataset(this);
 
         menu = (FloatingActionsMenu) findViewById(R.id.fab_menu);
         mainImageView = (ImageView) findViewById(R.id.image_view_main);
@@ -164,11 +169,16 @@ public class MainActivity extends AppCompatActivity {
             Bitmap opBitmap = KirschOperator.convertImage(gsBitmap);
             Bitmap bwBitmap = ImageUtils.getBinaryImage(opBitmap, 40);
             Bitmap trimmedBitmap = ImageUtils.trimSurrounding(bwBitmap);
-            Bitmap clusteredBitmap = KMeans.makeMarkedClusterImage(trimmedBitmap);
+            KMeans kMeans = KMeans.fromBitmap(trimmedBitmap);
+            kMeans.doCluster();
+            Bitmap clusteredBitmap = kMeans.makeMarkedClusterImage();
+
             ImageView imageViewGrayscale = createImageViewForComponent(gsBitmap);
             linearLayout.addView(imageViewGrayscale);
 //            ImageView imageViewBlurredGrayscale = createImageViewForComponent(gsBlurredBitmap);
 //            linearLayout.addView(imageViewBlurredGrayscale);
+            ImageView imageViewEdgeDetected = createImageViewForComponent(opBitmap);
+            linearLayout.addView(imageViewEdgeDetected);
             ImageView imageViewBlackWhite = createImageViewForComponent(bwBitmap);
             linearLayout.addView(imageViewBlackWhite);
             ImageView imageViewTrimmed = createImageViewForComponent(trimmedBitmap);
@@ -176,10 +186,34 @@ public class MainActivity extends AppCompatActivity {
             ImageView imageViewMarked = createImageViewForComponent(clusteredBitmap);
             linearLayout.addView(imageViewMarked);
 
+            Bitmap leftEye = ImageUtils.generateBitmapFromPoints(kMeans.getLeftEyePoints());
+            Bitmap rightEye = ImageUtils.generateBitmapFromPoints(kMeans.getRightEyePoints());
+            Bitmap nose = ImageUtils.generateBitmapFromPoints(kMeans.getNosePoints());
+            Bitmap mouth = ImageUtils.generateBitmapFromPoints(kMeans.getMouthPoints());
+            Person unknown = new Person(
+                    "?",
+                    FacePartConverter.getFacePartMatrix(leftEye, FacePartConverter.Part.LEFT_EYE),
+                    FacePartConverter.getFacePartMatrix(rightEye, FacePartConverter.Part.RIGHT_EYE),
+                    FacePartConverter.getFacePartMatrix(nose, FacePartConverter.Part.NOSE),
+                    FacePartConverter.getFacePartMatrix(mouth, FacePartConverter.Part.MOUTH));
+            PersonClassifier.classify(unknown);
+            TextView textView = new TextView(this);
+            textView.setText("Classified as " + unknown.getName() + " (similarity " + unknown.getSimilarity() + ")");
+
+//            ImageView imageViewLeftEye = createImageViewForComponent(leftEye);
+//            linearLayout.addView(imageViewLeftEye);
+//            Bitmap rightEye = ImageUtils.generateBitmapFromPoints(kMeans.getRightEyePoints());
+
             // Pack them altogether
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.setMargins(0, 20, 0, 20);
+
             horizontalScrollView.addView(linearLayout);
             topLayout.addView(horizontalScrollView);
-            resultLayout.addView(topLayout);
+            topLayout.addView(textView);
+
+            resultLayout.addView(topLayout, layoutParams);
         }
 
         // recycle unused bitmaps

@@ -7,12 +7,14 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.util.Pair;
 
+import java.util.List;
+
 /**
  * Created by Toshiba on 12/20/2015.
  */
 public class ImageUtils {
 
-    public static final int MAX_IMAGE_SIZE = 512;
+    public static final int MAX_IMAGE_SIZE = 768;
     public static final int MAX_IMAGE_AREA = MAX_IMAGE_SIZE * MAX_IMAGE_SIZE;
     public static final int GRAYSCALE_MASK = 0x00010101;
 
@@ -162,6 +164,43 @@ public class ImageUtils {
                     }
                 }
             }
+        }
+    }
+
+    public static Bitmap generateBitmapFromPoints(List<Point> points) {
+        if (points.isEmpty()) {
+            Bitmap result = Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565);
+            result.setPixel(0, 0, Color.WHITE);
+            return result;
+        } else {
+            Point topLeft = new Point(points.get(0));
+            Point bottomRight = new Point(points.get(0));
+            for (Point point : points) {
+                if (point.x < topLeft.x) {
+                    topLeft.x = point.x;
+                }
+                if (point.y < topLeft.y) {
+                    topLeft.y = point.y;
+                }
+                if (point.x > bottomRight.x) {
+                    bottomRight.x = point.x;
+                }
+                if (point.y > bottomRight.y) {
+                    bottomRight.y = point.y;
+                }
+            }
+            int width = bottomRight.x - topLeft.x + 1;
+            int height = bottomRight.y - topLeft.y + 1;
+            Bitmap result = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+            for (int x = 0; x < width; ++x) {
+                for (int y = 0; y < height; ++y) {
+                    result.setPixel(x, y, Color.WHITE);
+                }
+            }
+            for (Point point : points) {
+                result.setPixel(point.x - topLeft.x, point.y - topLeft.y, Color.BLACK);
+            }
+            return result;
         }
     }
 

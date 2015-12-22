@@ -4,60 +4,51 @@ package gatel.instacit.utils;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.os.Debug;
+import android.util.Log;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.List;
 
 public class KMeans {
 
-    public static Bitmap makeBlackAndWhite(Bitmap image, int threshold) {
-        Bitmap bwImage = image.copy(image.getConfig(), true);
-        for (int j = 0; j < bwImage.getHeight(); j++) {
-            for (int i = 0; i < bwImage.getWidth(); i++) {
-                int color = image.getPixel(i, j);
+    private Bitmap image;
+    private boolean isClustered = false;
+    private Bitmap processingImage;
+    private List<Point> leftEyePoints = new ArrayList<>();
+    private List<Point> rightEyePoints = new ArrayList<>();
+    private List<Point> nosePoints = new ArrayList<>();
+    private List<Point> mouthPoints = new ArrayList<>();
 
-                // get each color RGB
-                int red = Color.red(color);
-                int green = Color.green(color);
-                int blue = Color.blue(color);
-
-                // count grayscale
-                int greyColor = (int) (red + green + blue) / 3;
-
-                // compare with threshold
-                if (greyColor < threshold) {
-                    bwImage.setPixel(i, j, Color.BLACK);
-                } else {
-                    bwImage.setPixel(i, j, Color.WHITE);
-                }
-            }
-        }
-        return bwImage;
+    public KMeans(Bitmap image) {
+        this.image = image;
     }
 
-    public static Bitmap makeMarkedClusterImage(Bitmap image) {
-        Bitmap processing_image = image.copy(image.getConfig(), true);
+    public static KMeans fromBitmap(Bitmap bitmap) {
+        return new KMeans(bitmap);
+    }
+
+    public void doCluster() {
+        if (isClustered) {
+            Log.e("KMeans", "Attempt to do clustering after it is done");
+            return;
+        }
+        processingImage = image.copy(image.getConfig(), true);
 
         // left eye, green
         Point leftEyeCentroid = getEyeCentroid(image, false);
         Point prev_leftEyeCentroid = new Point(-1,-1);
-        ArrayList<Point> leftEyePoints = new ArrayList<>();
 
         // right eye, red
         Point rightEyeCentroid = getEyeCentroid(image, true);
         Point prev_rightEyeCentroid = new Point(-1,-1);
-        ArrayList<Point> rightEyePoints = new ArrayList<>();
 
         // nose, blue
         Point noseCentroid = getNoseCentroid(image);
         Point prev_noseCentroid = new Point(-1,-1);
-        ArrayList<Point> nosePoints = new ArrayList<>();
 
         // mouth, red
         Point mouthCentroid = getMouthCentroid(image);
         Point prev_mouthCentroid = new Point(-1,-1);
-        ArrayList<Point> mouthPoints = new ArrayList<>();
 
         ArrayList<Point> centroids = new ArrayList<>();
 
@@ -84,25 +75,25 @@ public class KMeans {
                         int idx = getClosestCentroidIndex(centroids, new Point(i, j));
                         switch (idx) {
                             case 0:
-                                processing_image.setPixel(i, j, Color.BLUE);
+                                processingImage.setPixel(i, j, Color.BLUE);
                                 leftEyePoints.add(new Point(i, j));
                                 break;
                             case 1:
-                                processing_image.setPixel(i, j, Color.RED);
+                                processingImage.setPixel(i, j, Color.RED);
                                 rightEyePoints.add(new Point(i, j));
                                 break;
                             case 2:
-                                processing_image.setPixel(i, j, Color.GREEN);
+                                processingImage.setPixel(i, j, Color.GREEN);
                                 nosePoints.add(new Point(i, j));
                                 break;
                             case 3:
-                                processing_image.setPixel(i, j, Color.CYAN);
+                                processingImage.setPixel(i, j, Color.CYAN);
                                 mouthPoints.add(new Point(i, j));
                                 break;
                         }
 //                        System.out.println("pada " + i + ", " + j + " indexnya " + idx);
                     } else if(j==0 || i==0 || j==image.getHeight()-1 || i==image.getWidth()-1) {
-                        processing_image.setPixel(i, j, Color.WHITE);
+                        processingImage.setPixel(i, j, Color.WHITE);
                     }
                 }
             }
@@ -113,11 +104,17 @@ public class KMeans {
             noseCentroid = updateCentroid(nosePoints);
             mouthCentroid = updateCentroid(mouthPoints);
         }
-
-        return processing_image;
+        isClustered = true;
     }
 
-    private static Point updateCentroid (ArrayList<Point> collection) {
+    public Bitmap makeMarkedClusterImage() {
+        if (!isClustered) {
+            throw new IllegalStateException("Clustering has not been done");
+        }
+        return processingImage;
+    }
+
+    private static Point updateCentroid (List<Point> collection) {
         int new_x = 0;
         int new_y = 0;
         for (Point p : collection) {
@@ -129,12 +126,12 @@ public class KMeans {
             new_y = new_y/collection.size();
         }
 
-        System.out.println("Update centroid ke : " + new_x + ", " + new_y);
+//        System.out.println("Update centroid ke : " + new_x + ", " + new_y);
         return new Point(new_x, new_y);
     }
 
-    public static int getClosestCentroidIndex(ArrayList<Point> centroids, Point point) {
-        ArrayList<Float> distToCentroids = new ArrayList<>();
+    public static int getClosestCentroidIndex(List<Point> centroids, Point point) {
+        List<Float> distToCentroids = new ArrayList<>();
         for (int i=0 ; i<centroids.size() ; i++) {
             distToCentroids.add((float) Math.sqrt(Math.pow(centroids.get(i).x - point.x, 2) + Math.pow(centroids.get(i).y - point.y, 2)));
         }
@@ -216,5 +213,35 @@ public class KMeans {
 
         return new Point(-1, -1);
     }
+
+
+    public Bitmap getImage() {
+        return image;
+    }
+
+    public boolean isClustered() {
+        return isClustered;
+    }
+
+    public Bitmap getProcessingImage() {
+        return processingImage;
+    }
+
+    public List<Point> getLeftEyePoints() {
+        return leftEyePoints;
+    }
+
+    public List<Point> getRightEyePoints() {
+        return rightEyePoints;
+    }
+
+    public List<Point> getNosePoints() {
+        return nosePoints;
+    }
+
+    public List<Point> getMouthPoints() {
+        return mouthPoints;
+    }
+
 
 }
