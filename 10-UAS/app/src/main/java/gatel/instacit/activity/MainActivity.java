@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
             Bitmap gsBitmap = ImageUtils.convertToGrayscale(croppedBitmap);
 //            Bitmap gsBlurredBitmap = GaussianBlur.fromBitmap(gsBitmap).blurBitmap(3);
             Bitmap opBitmap = KirschOperator.convertImage(gsBitmap);
-            Bitmap bwBitmap = ImageUtils.getBinaryImage(opBitmap, 40);
+            Bitmap bwBitmap = ImageUtils.getBinaryImage(opBitmap, ImageUtils.calculateThreshold(opBitmap));
             Bitmap trimmedBitmap = ImageUtils.trimSurrounding(bwBitmap);
             KMeans kMeans = KMeans.fromBitmap(trimmedBitmap);
             kMeans.doCluster();
