@@ -120,13 +120,13 @@ public class Person {
     }
 
     public double getSimilarity(Person otherPerson) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 60; ++i) for (int j = 0; j < 40; ++j) {
-            builder.append(leftEye[i][j]);
-        }
+//        StringBuilder builder = new StringBuilder();
+//        for (int i = 0; i < 60; ++i) for (int j = 0; j < 40; ++j) {
+//            builder.append(leftEye[i][j]);
+//        }
         double leftEyeSimilarity = getLeftEyeSimilarity(otherPerson);
-        builder.append(": ").append(leftEyeSimilarity * 2400.);
-        Log.d("PersonClassifier", builder.toString());
+//        builder.append(": ").append(leftEyeSimilarity * 2400.);
+//        Log.d("PersonClassifier", builder.toString());
         double rightEyeSimilarity = getRightEyeSimilarity(otherPerson);
         double noseSimilarity = getNoseSimilarity(otherPerson);
         double mouthSimilarity = getMouthSimilarity(otherPerson);
